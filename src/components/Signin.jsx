@@ -1,16 +1,51 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 
 const SigninPage = () => {
+  const navigate = useNavigate();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [remember, setRemember] = useState(false);
+  const [showPassword, setShowPassword] = useState(false); // Show/hide password
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const navigate = useNavigate();
+  const [banners] = useState([
+    "🚀 Welcome Back! Sign In Now! 🚀",
+    "Access your account and grab deals!",
+    "Sign in to continue your FitSpare journey!",
+    "Your car parts are just a login away!"
+  ]);
+  const [currentBanner, setCurrentBanner] = useState(0);
+  const [showBanner, setShowBanner] = useState(true);
+
+  // Banner animation
+  useEffect(() => {
+    const interval1 = setInterval(() => setShowBanner(false), 2000);
+    const interval2 = setInterval(() => {
+      setCurrentBanner((prev) => (prev + 1) % banners.length);
+      setShowBanner(true);
+    }, 4000);
+
+    return () => {
+      clearInterval(interval1);
+      clearInterval(interval2);
+    };
+  }, [banners.length]);
+
+  // Load remembered email/password
+  useEffect(() => {
+    const remembered = JSON.parse(localStorage.getItem("rememberedSignin"));
+    if (remembered?.email && remembered?.password) {
+      setEmail(remembered.email);
+      setPassword(remembered.password);
+      setRemember(true);
+    }
+  }, []);
 
   const submit = async (e) => {
     e.preventDefault();
@@ -23,13 +58,24 @@ const SigninPage = () => {
       data.append("password", password);
 
       const response = await axios.post(
-        "http://cyberspecter.alwaysdata.net/api/signin",
+        "https://cyberspecter.alwaysdata.net/api/signin",
         data
       );
 
       setLoading(false);
 
       if (response.data.user) {
+        // Store email & password if remember me checked
+        if (remember) {
+          localStorage.setItem(
+            "rememberedSignin",
+            JSON.stringify({ email, password })
+          );
+        } else {
+          localStorage.removeItem("rememberedSignin");
+        }
+
+        // Automatically go to home page
         navigate("/");
       } else {
         setError(response.data.message);
@@ -41,22 +87,11 @@ const SigninPage = () => {
   };
 
   return (
-    <div className="d-flex flex-column min-vh-100">
-      <div style={{
-        color: "grey",
-        fontStyle: "oblique",
-        textAlign: "center",
-        margin: "20px 0",
-        fontSize: "50px",
-        fontWeight: "bold",
-      }}>
-        welcome to fitspare motors
+    <div className="d-flex flex-column min-vh-100 offer-bg">
 
-      </div>
-
-      {/* ========== NAVBAR ========== */}
-      <nav className="navbar navbar-expand-md navbar-light bg-light">
-        <img src="/images2/logo 1.jpeg" alt="Logo" style={{ height: 30, width: 30 }} className="me-2"/>
+      {/* NAVBAR */}
+      <nav className="navbar navbar-expand-md navbar-dark shadow-lg offer-navbar sticky-top">
+        <img src="/images2/logo 1.jpeg" alt="Logo" style={{ height: 40, width: 40 }} className="me-2"/>
         <Link to="/" className="navbar-brand"><b>FitSpare Motors</b></Link>
         <button
           className="navbar-toggler"
@@ -72,170 +107,152 @@ const SigninPage = () => {
 
         <div className="collapse navbar-collapse" id="navbarCollapse">
           <div className="navbar-nav ms-auto">
-            <Link to="/" className="nav-link">Home</Link>
-            <Link to="/addproduct" className="nav-link">AddProduct</Link>
-            <Link to="/signup" className="nav-link">Sign Up</Link>
-            <Link to="/signin" className="nav-link active">Sign In</Link>
+            <Link to="/" className="nav-link offer-link">Home</Link>
+            <Link to="/addproduct" className="nav-link offer-link">Add Product</Link>
+            <Link to="/signup" className="nav-link offer-link">Sign Up</Link>
+            <Link to="/signin" className="nav-link offer-link active">Sign In</Link>
+            <Link to="/aboutus" className="nav-link offer-link active">About Us</Link>
           </div>
         </div>
       </nav>
 
-      {/* ========== WELCOME BANNER ========== */}
-      <div className="text-center my-3">
-        <h2 style={{ color: "mediumvioletred", fontStyle: "oblique" }}>
-          <span className="animated-marquee">
-            𝕎𝔼𝕃ℂ𝕆𝕄𝔼 𝕋𝕆 𝔽𝕀𝕋𝕊ℙ𝔸ℝ𝔼 𝕄𝕆𝕋𝕆ℝ𝕊
-          </span>
-        </h2>
+      {/* SIGNIN BANNER */}
+      <div className="offer-banner d-flex flex-column justify-content-center align-items-center text-center text-light">
+        <h1 className={`mb-2 flash-text ${showBanner ? "show" : "hide"}`}>
+          {banners[currentBanner]}
+        </h1>
+        <h3 className={`animated-text ${showBanner ? "show" : "hide"}`}>
+          Sign in to access your account instantly!
+        </h3>
       </div>
 
-      {/* CSS for marquee */}
-      <style>{`
-        .animated-marquee {
-          display: inline-block;
-          white-space: nowrap;
-          animation: scroll-left 15s linear infinite;
-        }
-        @keyframes scroll-left {
-          0% { transform: translateX(100%); }
-          100% { transform: translateX(-100%); }
-        }
-      `}</style>
+      {/* SIGNIN CARD */}
+      <div className="container flex-grow-1 d-flex justify-content-center align-items-start py-5">
+        <div className="card p-5 shadow-lg offer-card" style={{ maxWidth: "500px", width: "100%" }}>
+          <h3 className="text-center mb-3 text-warning">Sign In</h3>
 
-  
-
-      {/* ========== SIGNIN FORM ========== */}
-      <div className="container d-flex justify-content-center align-items-center flex-grow-1 my-5">
-        <div className="card p-4 shadow" style={{ maxWidth: "400px", width: "100%" }}>
-          <h2 className="text-center">Welcome Back </h2>
-          <p className="text-center text-muted">Sign in to continue</p>
-
-          {error && <div className="alert alert-danger">{error}</div>}
+          {error && <p className="text-danger text-center">{error}</p>}
 
           <form onSubmit={submit}>
             <input
               type="email"
-              placeholder=" Email"
+              placeholder="Email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
               className="form-control mb-3"
             />
             <input
-              type="password"
-              placeholder=" Password"
+              type={showPassword ? "text" : "password"}
+              placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="form-control mb-3"
+              className="form-control mb-2"
             />
-            <button className="btn btn-primary w-100" disabled={loading}>
-              {loading ? "Signing in..." : "Sign In "}
+            <div className="form-check mb-3">
+              <input
+                type="checkbox"
+                className="form-check-input"
+                id="showPassword"
+                checked={showPassword}
+                onChange={(e) => setShowPassword(e.target.checked)}
+              />
+              <label className="form-check-label" htmlFor="showPassword">
+                Show Password
+              </label>
+            </div>
+            <div className="form-check mb-4">
+              <input
+                type="checkbox"
+                className="form-check-input"
+                id="rememberMe"
+                checked={remember}
+                onChange={(e) => setRemember(e.target.checked)}
+              />
+              <label className="form-check-label" htmlFor="rememberMe">
+                Remember Me
+              </label>
+            </div>
+            <button type="submit" className="btn btn-gradient w-100 mb-3" disabled={loading}>
+              {loading ? "Signing in..." : "Sign In"}
             </button>
           </form>
 
-          <p className="text-center mt-3">
-            Don’t have an account? <Link to="/signup">Sign Up</Link>
+          <p className="text-center mt-3 small">
+            Don’t have an account? <Link to="/signup" className="fw-semibold text-decoration-none text-warning">Sign Up</Link>
           </p>
         </div>
       </div>
-{/* ========== FOOTER ========== */}
-<footer className="mt-auto">
-  <section className="row bg-danger text-light p-4">
-    <div className="col-md-3 text-center mb-4">
-      <h4>About Us</h4>
-      <p>
-        FitSpare Motors provides top-quality car spare parts and engine components you can trust. 
-        We focus on reliability and durability to keep your vehicle running smoothly.
-      </p>
-      <p>
-        Our team is committed to helping you find the right parts quickly and easily. 
-        Your satisfaction and your car’s performance come first.
-      </p>
-    </div>
 
-    <div className="col-md-3 text-center mb-4">
-      <h4>Contact Us</h4>
-      <form
-        onSubmit={async (e) => {
-          e.preventDefault();
-          const form = e.target;
-          const email = form.email.value;
-          const comment = form.comment.value;
+      {/* FOOTER */}
+      <footer className="mt-auto bg-dark text-light text-center py-4">
+        <h5>©2026 FitSpare Motors. All Rights Reserved.</h5>
+        <p>Follow us on social media for exclusive deals!</p>
+      </footer>
 
-          if (!email || !comment) return;
-
-          try {
-            // Replace with your Formspree form endpoint
-            const response = await fetch("https://formspree.io/f/yourformid", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ email, comment }),
-            });
-
-            if (response.ok) {
-              form.reset(); // automatically clears fields after sending
-            } else {
-              console.error("Error sending message");
-            }
-          } catch (err) {
-            console.error("Error sending message", err);
-          }
-        }}
-      >
-        <input
-          type="email"
-          name="email"
-          placeholder="Enter your email"
-          className="form-control mb-3"
-          required
-        />
-        <textarea
-          name="comment"
-          className="form-control mb-3"
-          rows="3"
-          placeholder="Leave a comment"
-          required
-        ></textarea>
-        <button className="btn btn-primary w-100" type="submit">
-          Send
-        </button>
-      </form>
-    </div>
-
-    <div className="col-md-3 text-center mb-4">
-      <h4>Stay Connected</h4>
-      <p>
-        Stay connected with FitSpare Motors on social media! Follow us on Facebook, Instagram, WhatsApp, and LinkedIn to get updates on new car parts, special offers, promotions, and tips to keep your vehicle running smoothly. Join our community and never miss out!
-      </p>
-      <div className="d-flex justify-content-center gap-2">
-        <a href="https://www.facebook.com" target="_blank" rel="noreferrer">
-          <img src="/images2/faba.jpeg" alt="Facebook" width="40" height="40" />
-        </a>
-        <a href="https://wa.me/" target="_blank" rel="noreferrer">
-          <img src="/images2/wats.jpg" alt="WhatsApp" width="40" height="40" />
-        </a>
-        <a href="https://www.instagram.com" target="_blank" rel="noreferrer">
-          <img src="/images2/insta.jpeg" alt="Instagram" width="40" height="40" />
-        </a>
-        <a href="https://www.linkedin.com" target="_blank" rel="noreferrer">
-          <img src="/images2/linked.jpeg" alt="LinkedIn" width="40" height="40" />
-        </a>
-      </div>
-    </div>
-
-    <div className="col-md-3 text-center mb-4">
-      <img src="/images2/logo 2.jpeg" alt="logo" style={{ width: 300, height: 300 }} />
-    </div>
-  </section>
-
-  <section className="bg-dark text-light text-center py-3">
-    <h5 className="fs-6 mt-2">
-      Developed by Wilmark Kipkirui Korir. &copy;2026. All rights reserved.
-    </h5>
-  </section>
-</footer>
-
+      {/* ===== STYLES ===== */}
+      <style>{`
+        .offer-bg {
+          background: linear-gradient(135deg, #f0f0f0, #ffe6e6, #f0f0f0);
+        }
+        .offer-navbar {
+          background: linear-gradient(90deg, #ff4d4d, #ffb84d);
+          font-weight: bold;
+        }
+        .offer-link {
+          color: white !important;
+          font-weight: bold;
+          transition: color 0.3s, transform 0.2s;
+        }
+        .offer-link:hover {
+          color: #ffd633 !important;
+          transform: scale(1.1);
+        }
+        .offer-banner {
+          height: 200px;
+          background: linear-gradient(45deg, #ff6666, #ffcc66);
+          box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+          margin-bottom: 30px;
+          padding: 20px;
+          border-radius: 15px;
+        }
+        .flash-text {
+          animation: flash 1.5s infinite;
+        }
+        @keyframes flash {
+          0%,50%,100% { opacity:1; }
+          25%,75% { opacity:0; }
+        }
+        .animated-text {
+          font-size: 1.5rem;
+          font-weight: bold;
+          color: #fff;
+          animation: appearDisappear 4s infinite;
+        }
+        @keyframes appearDisappear {
+          0%,25%,100% { opacity:0; }
+          50%,75% { opacity:1; }
+        }
+        .offer-card {
+          border-radius: 20px;
+          background: linear-gradient(145deg, #ffffff, #ffe6f0);
+          transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .offer-card:hover {
+          transform: scale(1.02);
+          box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .btn-gradient {
+          background: linear-gradient(90deg, #ff4d4d, #ffb84d);
+          color: white;
+          font-weight: bold;
+          transition: transform 0.2s;
+        }
+        .btn-gradient:hover {
+          transform: scale(1.05);
+        }
+      `}</style>
     </div>
   );
 };

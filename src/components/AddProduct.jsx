@@ -10,7 +10,6 @@ const AddProduct = () => {
   const [product_cost, setProduct_cost] = useState("");
   const [product_photo, setProduct_photo] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
-
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -51,7 +50,6 @@ const AddProduct = () => {
       setProduct_cost("");
       setProduct_photo(null);
       setPreviewUrl(null);
-
     } catch (err) {
       setError(err.response?.data?.message || "Something went wrong");
     } finally {
@@ -60,62 +58,45 @@ const AddProduct = () => {
   };
 
   return (
+    <div className="d-flex flex-column min-vh-100 offer-bg">
 
-        <div className="d-flex flex-column min-vh-100">
-    
-          {/* ========== NAVBAR ========== */}
-          <nav className="navbar navbar-expand-md navbar-light bg-light">
-            <img src="/images2/logo 1.jpeg" alt="Logo" style={{ height: 30, width: 30 }} className="me-2"/>
-            <Link to="/" className="navbar-brand"><b>FitSpare Motors</b></Link>
-            <button
-              className="navbar-toggler"
-              type="button"
-              data-bs-toggle="collapse"
-              data-bs-target="#navbarCollapse"
-              aria-controls="navbarCollapse"
-              aria-expanded="false"
-              aria-label="Toggle navigation"
-            >
-              <span className="navbar-toggler-icon"></span>
-            </button>
-    
-            <div className="collapse navbar-collapse" id="navbarCollapse">
-              <div className="navbar-nav ms-auto">
-                <Link to="/" className="nav-link">Home</Link>
-                <Link to="/addproduct" className="nav-link">AddProduct</Link>
-                <Link to="/signup" className="nav-link">Sign Up</Link>
-                <Link to="/signin" className="nav-link active">Sign In</Link>
-              </div>
-            </div>
-          </nav>
-    
-          {/* ========== WELCOME BANNER ========== */}
-          <div className="text-center my-3">
-            <h2 style={{ color: "mediumvioletred", fontStyle: "oblique" }}>
-              <span className="animated-marquee">
-                𝕎𝔼𝕃ℂ𝕆𝕄𝔼 𝕋𝕆 𝔽𝕀𝕋𝕊ℙ𝔸ℝ𝔼 𝕄𝕆𝕋𝕆ℝ𝕊
-              </span>
-            </h2>
+      {/* NAVBAR */}
+      <nav className="navbar navbar-expand-md navbar-dark shadow-lg offer-navbar sticky-top">
+        <img src="/images2/logo 1.jpeg" alt="Logo" style={{ height: 40, width: 40 }} className="me-2"/>
+        <Link to="/" className="navbar-brand"><b>FitSpare Motors</b></Link>
+        <button
+          className="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#navbarCollapse"
+          aria-controls="navbarCollapse"
+          aria-expanded="false"
+          aria-label="Toggle navigation"
+        >
+          <span className="navbar-toggler-icon"></span>
+        </button>
+
+        <div className="collapse navbar-collapse" id="navbarCollapse">
+          <div className="navbar-nav ms-auto">
+            <Link to="/" className="nav-link">Home</Link>
+            <Link to="/addproduct" className="nav-link active">Add Product</Link>
+            <Link to="/signup" className="nav-link">Sign Up</Link>
+            <Link to="/signin" className="nav-link">Sign In</Link>
+            <Link to="/aboutus" className="nav-link offer-link active">About Us</Link>
           </div>
-    
-          {/* CSS for marquee */}
-          <style>{`
-            .animated-marquee {
-              display: inline-block;
-              white-space: nowrap;
-              animation: scroll-left 15s linear infinite;
-            }
-            @keyframes scroll-left {
-              0% { transform: translateX(100%); }
-              100% { transform: translateX(-100%); }
-            }
-          `}</style>
-    
+        </div>
+      </nav>
 
-      {/* Add Product Form */}
+      {/* OFFER BANNER */}
+      <div className="offer-banner d-flex flex-column justify-content-center align-items-center text-center text-light">
+        <h1 className="mb-2 flash-text">🔥 HOT DEALS ALERT! 🔥</h1>
+        <h3 className="animated-text">Add your products now and grab attention! Limited Time Offer!</h3>
+      </div>
+
+      {/* ADD PRODUCT FORM */}
       <div className="container flex-grow-1 d-flex justify-content-center align-items-start py-5">
-        <div className="card p-4 shadow-sm" style={{ maxWidth: 500, width: "100%" }}>
-          <h3 className="text-center mb-3">Add Product</h3>
+        <div className="card p-4 shadow-lg offer-card">
+          <h3 className="text-center mb-3 text-warning">Add Product</h3>
 
           {loading && <p className="text-warning text-center">Adding product...</p>}
           {error && <p className="text-danger text-center">{error}</p>}
@@ -155,10 +136,10 @@ const AddProduct = () => {
             />
 
             {previewUrl && (
-              <img src={previewUrl} alt="Preview" className="img-fluid mb-3" style={{ maxHeight: 150 }} />
+              <img src={previewUrl} alt="Preview" className="img-fluid mb-3" style={{ maxHeight: 150, borderRadius: 10 }} />
             )}
 
-            <button type="submit" className="btn btn-primary w-100 mb-2" disabled={loading || !product_photo}>
+            <button type="submit" className="btn btn-gradient w-100 mb-2" disabled={loading || !product_photo}>
               {loading ? "Adding..." : "Add Product"}
             </button>
             <button className="btn btn-secondary w-100" onClick={() => navigate("/")}>
@@ -168,54 +149,79 @@ const AddProduct = () => {
         </div>
       </div>
 
-            {/* ========== FOOTER ========== */}
-      <footer className="mt-auto">
-        <section className="row bg-danger text-light p-4">
-          <div className="col-md-3 text-center mb-4">
-            <h4>About Us</h4>
-            <p>FitSpare Motors provides top-quality car spare parts and engine components you can trust. We focus on reliability and durability to keep your vehicle running smoothly.</p>
-            <p>Our team is committed to helping you find the right parts quickly and easily. Your satisfaction and your car’s performance come first.</p>
-          </div>
-
-          <div className="col-md-3 text-center mb-4">
-            <h4>Contact Us</h4>
-            <form>
-              <input type="email" placeholder="Enter your email" className="form-control mb-3"/>
-              <textarea className="form-control mb-3" rows="3" placeholder="Leave a comment"></textarea>
-              <button className="btn btn-primary">Send</button>
-            </form>
-          </div>
-
-          <div className="col-md-3 text-center mb-4">
-            <h4>Stay Connected</h4>
-            <p>Stay connected with FitSpare Motors on social media! Follow us on Facebook, Instagram, WhatsApp, and LinkedIn to get updates on new car parts, special offers, promotions, and tips to keep your vehicle running smoothly. Join our community and never miss out!</p>
-            <div className="d-flex justify-content-center gap-2">
-              <a href="https://www.facebook.com" target="_blank" rel="noreferrer">
-                <img src="/images2/faba.jpeg" alt="Facebook" width="40" height="40" />
-              </a>
-              <a href="https://wa.me/" target="_blank" rel="noreferrer">
-                <img src="/images2/wats.jpg" alt="WhatsApp" width="40" height="40"   />
-              </a>
-              <a href="https://www.instagram.com" target="_blank" rel="noreferrer">
-                <img src="/images2/insta.jpeg" alt="Instagram" width="40" height="40" />
-              </a>
-              <a href="https://www.linkedin.com" target="_blank" rel="noreferrer">
-                <img src="/images2/linked.jpeg" alt="LinkedIn" width="40" height="40" />
-              </a>
-            </div>
-          </div>
-
-          <div className="col-md-3 text-center mb-4">
-            <img src="/images2/logo 2.jpeg" alt="logo" style={{ width: 300, height: 300 }} />
-          </div>
-        </section>
-
-        <section className="bg-dark text-light text-center py-3">
-          <h5 className="fs-6 mt-2">
-            Developed by Wilmark Kipkirui Korir. &copy;2026. All rights reserved.
-          </h5>
-        </section>
+      {/* FOOTER */}
+      <footer className="mt-auto bg-dark text-light text-center py-4">
+        <h5>©2026 FitSpare Motors. All Rights Reserved.</h5>
+        <p>Follow us on social media for exclusive deals!</p>
       </footer>
+
+      {/* ===== STYLES ===== */}
+      <style>{`
+        /* Background Gradient */
+        .offer-bg {
+          background: linear-gradient(135deg, #f0f0f0, #ffe6e6, #f0f0f0);
+        }
+
+        /* Navbar */
+        .offer-navbar {
+          background: linear-gradient(90deg, #ff4d4d, #ffb84d);
+          font-weight: bold;
+        }
+
+        /* Offer Banner */
+        .offer-banner {
+          height: 250px;
+          background: linear-gradient(45deg, #ff6666, #ffcc66);
+          box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+          margin-bottom: 30px;
+          padding: 20px;
+          border-radius: 15px;
+        }
+
+        /* Flashing and animated text */
+        .flash-text {
+          animation: flash 1.5s infinite;
+        }
+
+        @keyframes flash {
+          0%, 50%, 100% { opacity: 1; }
+          25%, 75% { opacity: 0; }
+        }
+
+        .animated-text {
+          font-size: 1.5rem;
+          font-weight: bold;
+          color: #fff;
+          animation: appearDisappear 4s infinite;
+        }
+
+        @keyframes appearDisappear {
+          0%, 25%, 100% { opacity: 0; }
+          50%, 75% { opacity: 1; }
+        }
+
+        /* Product Card */
+        .offer-card {
+          border-radius: 20px;
+          background: linear-gradient(145deg, #ffffff, #ffe6f0);
+          transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .offer-card:hover {
+          transform: scale(1.02);
+          box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        /* Buttons */
+        .btn-gradient {
+          background: linear-gradient(90deg, #ff4d4d, #ffb84d);
+          color: white;
+          font-weight: bold;
+          transition: transform 0.2s;
+        }
+        .btn-gradient:hover {
+          transform: scale(1.05);
+        }
+      `}</style>
     </div>
   );
 };

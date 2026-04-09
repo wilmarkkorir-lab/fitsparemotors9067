@@ -1,6 +1,6 @@
 // import logo from './logo.svg';
 import 'bootstrap/dist/css/bootstrap.css'
-import { Link, Route, BrowserRouter as Router, Routes } from 'react-router-dom';
+import {  Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 import Signup from './components/Signup';
 import Signin from './components/Signin';
 import AddProduct from './components/AddProduct';
@@ -11,6 +11,7 @@ import 'bootstrap/dist/js/bootstrap.bundle.min';
 
 
 import MakePayment from './components/MakePayment';
+import AboutUs from './components/AboutUs';
 
 
 function App() {
@@ -21,10 +22,7 @@ function App() {
           <h1>Fitspare Motors</h1>
           </header>
 
-          <Link to="/" className='btn btn-danger'>Home</Link>
-          <Link to="/addproduct" className='btn btn-primary'>Add Product</Link>
-          <Link to="/signup" className='btn btn-success'>Sign Up</Link>
-          <Link to="/signin" className='btn btn-info'>Sign In</Link>
+         
       
           
          
@@ -37,6 +35,7 @@ function App() {
           <Route path='/signin' element={<Signin/>}/>
           <Route path='/addproduct' element={<AddProduct/>}/>
           <Route path='/' element={<GetProducts/>}/>
+          <Route path='/aboutus' element={<AboutUs/>}/>
         
         </Routes>
     </Router>

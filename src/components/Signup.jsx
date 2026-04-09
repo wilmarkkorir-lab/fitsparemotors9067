@@ -1,16 +1,43 @@
 import axios from "axios";
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 
 const Signup = () => {
+  const navigate = useNavigate();
+
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  // Signup banner messages
+  const [banners] = useState([
+    "🚀 Join FitSpare Motors Today! 🚀",
+    "Sign up to access exclusive deals!",
+    "Create your account in seconds!",
+    "Be part of our growing car parts community!"
+  ]);
+  const [currentBanner, setCurrentBanner] = useState(0);
+  const [showBanner, setShowBanner] = useState(true);
+
+  // Banner animation
+  useEffect(() => {
+    const interval1 = setInterval(() => setShowBanner(false), 2000); // disappear
+    const interval2 = setInterval(() => {
+      setCurrentBanner((prev) => (prev + 1) % banners.length);
+      setShowBanner(true); // appear
+    }, 4000); // appear after disappear
+
+    return () => {
+      clearInterval(interval1);
+      clearInterval(interval2);
+    };
+  }, [banners.length]);
 
   const submit = async (e) => {
     e.preventDefault();
@@ -35,6 +62,9 @@ const Signup = () => {
       setEmail("");
       setPhone("");
       setPassword("");
+
+      // Redirect to Sign In after 2 seconds
+      setTimeout(() => navigate("/signin"), 2000);
     } catch (err) {
       setError(err.response?.data?.message || "Something went wrong");
     } finally {
@@ -43,22 +73,11 @@ const Signup = () => {
   };
 
   return (
-    <div className="d-flex flex-column min-vh-100">
-       <div style={{
-        color: "grey",
-        fontStyle: "oblique",
-        textAlign: "center",
-        margin: "20px 0",
-        fontSize: "50px",
-        fontWeight: "bold",
-      }}>
-        welcome to fitspare motors
+    <div className="d-flex flex-column min-vh-100 offer-bg">
 
-      </div>
-
-      {/* ========== NAVBAR ========== */}
-      <nav className="navbar navbar-expand-md navbar-light bg-light">
-        <img src="/images2/logo 1.jpeg" alt="Logo" style={{ height: 30, width: 30 }} className="me-2"/>
+      {/* NAVBAR */}
+      <nav className="navbar navbar-expand-md navbar-dark shadow-lg offer-navbar sticky-top">
+        <img src="/images2/logo 1.jpeg" alt="Logo" style={{ height: 40, width: 40 }} className="me-2"/>
         <Link to="/" className="navbar-brand"><b>FitSpare Motors</b></Link>
         <button
           className="navbar-toggler"
@@ -74,115 +93,159 @@ const Signup = () => {
 
         <div className="collapse navbar-collapse" id="navbarCollapse">
           <div className="navbar-nav ms-auto">
-            <Link to="/" className="nav-link">Home</Link>
-            <Link to="/addproduct" className="nav-link">AddProduct</Link>
-            <Link to="/signup" className="nav-link">Sign Up</Link>
-            <Link to="/signin" className="nav-link active">Sign In</Link>
+            <Link to="/" className="nav-link offer-link">Home</Link>
+            <Link to="/addproduct" className="nav-link offer-link">Add Product</Link>
+            <Link to="/signup" className="nav-link offer-link active">Sign Up</Link>
+            <Link to="/signin" className="nav-link offer-link">Sign In</Link>
+            <Link to="/aboutus" className="nav-link offer-link active">About Us</Link>
           </div>
         </div>
       </nav>
 
-      {/* ========== WELCOME BANNER ========== */}
-      <div className="text-center my-3">
-        <h2 style={{ color: "mediumvioletred", fontStyle: "oblique" }}>
-          <span className="animated-marquee">
-            𝕎𝔼𝕃ℂ𝕆𝕄𝔼 𝕋𝕆 𝔽𝕀𝕋𝕊ℙ𝔸ℝ𝔼 𝕄𝕆𝕋𝕆ℝ𝕊
-          </span>
-        </h2>
+      {/* SIGNUP BANNER */}
+      <div className="offer-banner d-flex flex-column justify-content-center align-items-center text-center text-light">
+        <h1 className={`mb-2 flash-text ${showBanner ? "show" : "hide"}`}>
+          {banners[currentBanner]}
+        </h1>
+        <h3 className={`animated-text ${showBanner ? "show" : "hide"}`}>
+          Start your journey with FitSpare Motors today!
+        </h3>
       </div>
 
-      {/* CSS for marquee */}
-      <style>{`
-        .animated-marquee {
-          display: inline-block;
-          white-space: nowrap;
-          animation: scroll-left 15s linear infinite;
-        }
-        @keyframes scroll-left {
-          0% { transform: translateX(100%); }
-          100% { transform: translateX(-100%); }
-        }
-      `}</style>
+      {/* SIGNUP CARD */}
+      <div className="container flex-grow-1 d-flex justify-content-center align-items-start py-5">
+        <div className="card p-5 shadow-lg offer-card" style={{ maxWidth: "600px", width: "100%" }}>
+          <h3 className="text-center mb-3 text-warning">Create Account</h3>
 
- 
-
-      {/* ==================== Signup Card ==================== */}
-      <div className="container flex-grow-1 d-flex justify-content-center align-items-start pt-5 mb-5">
-        <div className="card border-0 shadow-lg p-3" style={{ maxWidth: "520px", width: "100%", borderRadius: "14px" }}>
-          <div className="text-center mb-2">
-            <h3 className="fw-bold text-dark mb-1"> FitSpare Motors</h3>
-            <p className="text-muted small">Create your account</p>
-          </div>
-
-          {loading && <p className="text-center text-primary small">Please wait...</p>}
-          {error && <div className="alert alert-danger text-center py-1">{error}</div>}
-          {success && <div className="alert alert-success text-center py-1">{success}</div>}
+          {loading && <p className="text-warning text-center">Creating account...</p>}
+          {error && <p className="text-danger text-center">{error}</p>}
+          {success && <p className="text-success text-center">{success}</p>}
 
           <form onSubmit={submit}>
-            <input type="text" placeholder="Username" value={username} onChange={(e) => setUsername(e.target.value)} required className="form-control mb-2 rounded-pill" />
-            <input type="email" placeholder="Email Address" value={email} onChange={(e) => setEmail(e.target.value)} required className="form-control mb-2 rounded-pill" />
-            <input type="tel" placeholder="Phone Number" value={phone} onChange={(e) => setPhone(e.target.value)} required className="form-control mb-2 rounded-pill" />
-            <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required className="form-control mb-3 rounded-pill" />
+            <input
+              type="text"
+              className="form-control mb-3"
+              placeholder="Username"
+              required
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+            />
+            <input
+              type="email"
+              className="form-control mb-3"
+              placeholder="Email Address"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+            <input
+              type="tel"
+              className="form-control mb-3"
+              placeholder="Phone Number"
+              required
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+            />
+            <input
+              type={showPassword ? "text" : "password"}
+              className="form-control mb-2"
+              placeholder="Password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+            <div className="form-check mb-4">
+              <input
+                type="checkbox"
+                className="form-check-input"
+                id="showPassword"
+                checked={showPassword}
+                onChange={(e) => setShowPassword(e.target.checked)}
+              />
+              <label className="form-check-label" htmlFor="showPassword">
+                Show Password
+              </label>
+            </div>
 
-            <button type="submit" disabled={loading} className="btn btn-primary w-100 rounded-pill fw-semibold">
+            <button type="submit" disabled={loading} className="btn btn-gradient w-100 mb-3">
               {loading ? "Creating..." : "Sign Up"}
             </button>
-          </form>
 
-          <p className="text-center mt-4 mb-2 small">
-            Already have an account? <Link to="/signin" className="fw-semibold text-decoration-none">Sign In</Link>
-          </p>
+            <p className="text-center mt-3 small">
+              Already have an account? <Link to="/signin" className="fw-semibold text-decoration-none text-warning">Sign In</Link>
+            </p>
+          </form>
         </div>
       </div>
 
-           {/* ========== FOOTER ========== */}
-      <footer className="mt-auto">
-        <section className="row bg-danger text-light p-4">
-          <div className="col-md-3 text-center mb-4">
-            <h4>About Us</h4>
-            <p>FitSpare Motors provides top-quality car spare parts and engine components you can trust. We focus on reliability and durability to keep your vehicle running smoothly.</p>
-            <p>Our team is committed to helping you find the right parts quickly and easily. Your satisfaction and your car’s performance come first.</p>
-          </div>
-
-          <div className="col-md-3 text-center mb-4">
-            <h4>Contact Us</h4>
-            <form>
-              <input type="email" placeholder="Enter your email" className="form-control mb-3"/>
-              <textarea className="form-control mb-3" rows="3" placeholder="Leave a comment"></textarea>
-              <button className="btn btn-primary">Send</button>
-            </form>
-          </div>
-
-          <div className="col-md-3 text-center mb-4">
-            <h4>Stay Connected</h4>
-            <p>Stay connected with FitSpare Motors on social media! Follow us on Facebook, Instagram, WhatsApp, and LinkedIn to get updates on new car parts, special offers, promotions, and tips to keep your vehicle running smoothly. Join our community and never miss out!</p>
-            <div className="d-flex justify-content-center gap-2">
-              <a href="https://www.facebook.com" target="_blank" rel="noreferrer">
-                <img src="/images2/faba.jpeg" alt="Facebook" width="40"  height="40"/>
-              </a>
-              <a href="https://wa.me/" target="_blank" rel="noreferrer">
-                <img src="/images2/wats.jpg" alt="WhatsApp" width="40" height="40"   />
-              </a>
-              <a href="https://www.instagram.com" target="_blank" rel="noreferrer">
-                <img src="/images2/insta.jpeg" alt="Instagram" width="40" height="40" />
-              </a>
-              <a href="https://www.linkedin.com" target="_blank" rel="noreferrer">
-                <img src="/images2/linked.jpeg" alt="LinkedIn" width="40" height="40" />
-              </a>
-            </div>
-          </div>
-
-          <div className="col-md-3 text-center mb-4">
-            <img src="/images2/logo 2.jpeg" alt="logo" style={{ width: 300, height: 300 }} />
-          </div>
-        </section>
-
-        <section className="bg-dark text-light text-center py-3">
-          <h5 className="fs-6 mt-2">
-            Developed by Wilmark Kipkirui Korir. &copy;2026. All rights reserved.
-          </h5>
-        </section>
+      {/* FOOTER */}
+      <footer className="mt-auto bg-dark text-light text-center py-4">
+        <h5>©2026 FitSpare Motors. All Rights Reserved.</h5>
+        <p>Follow us on social media for exclusive deals!</p>
       </footer>
+
+      {/* ===== STYLES ===== */}
+      <style>{`
+        .offer-bg {
+          background: linear-gradient(135deg, #f0f0f0, #ffe6e6, #f0f0f0);
+        }
+        .offer-navbar {
+          background: linear-gradient(90deg, #ff4d4d, #ffb84d);
+          font-weight: bold;
+        }
+        .offer-link {
+          color: white !important;
+          font-weight: bold;
+          transition: color 0.3s, transform 0.2s;
+        }
+        .offer-link:hover {
+          color: #ffd633 !important;
+          transform: scale(1.1);
+        }
+        .offer-banner {
+          height: 250px;
+          background: linear-gradient(45deg, #ff6666, #ffcc66);
+          box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+          margin-bottom: 30px;
+          padding: 20px;
+          border-radius: 15px;
+        }
+        .flash-text {
+          animation: flash 1.5s infinite;
+        }
+        @keyframes flash {
+          0%,50%,100% { opacity:1; }
+          25%,75% { opacity:0; }
+        }
+        .animated-text {
+          font-size: 1.5rem;
+          font-weight: bold;
+          color: #fff;
+          animation: appearDisappear 4s infinite;
+        }
+        @keyframes appearDisappear {
+          0%,25%,100% { opacity:0; }
+          50%,75% { opacity:1; }
+        }
+        .offer-card {
+          border-radius: 20px;
+          background: linear-gradient(145deg, #ffffff, #ffe6f0);
+          transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .offer-card:hover {
+          transform: scale(1.02);
+          box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .btn-gradient {
+          background: linear-gradient(90deg, #ff4d4d, #ffb84d);
+          color: white;
+          font-weight: bold;
+          transition: transform 0.2s;
+        }
+        .btn-gradient:hover {
+          transform: scale(1.05);
+        }
+      `}</style>
     </div>
   );
 };
