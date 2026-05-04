@@ -1,49 +1,176 @@
 import axios from 'axios';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Capacitor } from '@capacitor/core';
-import { AdMob } from '@capacitor-community/admob';
+
+// ── CHAT ANSWERS (predefined responses) ──
+const chatAnswers = [
+  // GREETINGS
+  { keywords: ['hello', 'hi', 'hey', 'good morning', 'good afternoon', 'good evening', 'hii', 'hallo'], answer: "Hello! 👋 Welcome to FitSpare Motors! I'm here to help you find the right car parts. What do you need today?" },
+  { keywords: ['how are you', 'how r you', 'how are u'], answer: "I'm doing great, thank you! 😊 Ready to help you find the best car parts. What can I assist you with?" },
+
+  // PRODUCTS
+  { keywords: ['brake', 'brake pad', 'brake pads', 'brakes', 'disc'], answer: "🔧 Yes! We stock brake pads and brake discs for Toyota, Nissan, Subaru, Mitsubishi, Honda, and more. Search 'brake' in the search bar above to see all available options!" },
+  { keywords: ['engine oil', 'oil', 'lubricant', 'motor oil'], answer: "🛢️ We carry engine oils in various grades — 5W-30, 10W-40, 15W-40. Suitable for petrol and diesel engines. Search 'oil' in the product search bar above!" },
+  { keywords: ['air filter', 'airfilter', 'cabin filter', 'filter'], answer: "🌬️ We stock air filters, cabin filters, and oil filters for most car models. Search 'filter' above to find one that matches your car!" },
+  { keywords: ['spark plug', 'sparkplug', 'spark plugs', 'ignition'], answer: "⚡ Yes! We have spark plugs for all major brands — NGK, Denso, Bosch. Works for Toyota, Nissan, Subaru, Honda, and more. Search 'spark' above!" },
+  { keywords: ['shock absorber', 'shock', 'shocks', 'absorber', 'suspension'], answer: "🚗 We stock front and rear shock absorbers for Toyota, Nissan, Subaru, Mitsubishi, and more. Search 'shock' above to browse available stock!" },
+  { keywords: ['battery', 'car battery', 'batteries'], answer: "🔋 We have car batteries in different sizes — 35Ah, 45Ah, 55Ah, 75Ah. Brands include Exide and Amaron. Search 'battery' in the search bar!" },
+  { keywords: ['clutch', 'clutch plate', 'clutch disc', 'pressure plate'], answer: "⚙️ We stock clutch kits including the clutch plate, pressure plate, and bearing for Toyota, Nissan, Subaru, and more. Search 'clutch' above!" },
+  { keywords: ['radiator', 'cooling', 'coolant', 'overheating'], answer: "🌡️ We have radiators and coolants available. If your car is overheating, the right radiator or coolant can fix it. Search 'radiator' or 'coolant' above!" },
+  { keywords: ['gearbox', 'transmission', 'gear'], answer: "🔩 We carry gearbox parts and transmission components. Search 'gearbox' or visit our shop for expert advice on your specific car model!" },
+  { keywords: ['exhaust', 'muffler', 'silencer'], answer: "💨 Yes! We stock exhaust pipes, mufflers, and silencers. Search 'exhaust' above to find the right fit for your car!" },
+  { keywords: ['alternator', 'generator', 'charging'], answer: "⚡ We have alternators for Toyota, Nissan, Subaru, and more. If your battery keeps dying, a faulty alternator may be the issue. Search 'alternator' above!" },
+  { keywords: ['starter', 'starter motor', 'starting motor'], answer: "🔑 We stock starter motors for most car models. Search 'starter' above or contact us with your car model for guidance!" },
+  { keywords: ['tyre', 'tire', 'tyres', 'tires', 'rim', 'rims', 'wheel'], answer: "🚗 We stock tyres and rims for various car models and sizes. Search 'tyre' or 'rim' above. We can also advise on the right size for your car!" },
+  { keywords: ['headlight', 'tail light', 'light', 'lamp', 'bulb', 'indicator'], answer: "💡 We have headlights, tail lights, indicators, and bulbs. Search 'light' or 'lamp' in the search bar to see what's available!" },
+  { keywords: ['mirror', 'side mirror', 'wing mirror'], answer: "🪞 We stock side mirrors for Toyota, Nissan, Subaru, and more. Search 'mirror' above!" },
+  { keywords: ['bumper', 'body part', 'bonnet', 'hood', 'fender', 'door'], answer: "🚗 We carry various body parts including bumpers, bonnets, fenders, and doors. Contact us with your car model and year for availability!" },
+  { keywords: ['wiper', 'windscreen', 'windshield', 'wipers'], answer: "🌧️ We have wiper blades and windscreens for most cars. Search 'wiper' above or tell us your car model!" },
+
+  // CAR BRANDS
+  { keywords: ['toyota', 'corolla', 'hilux', 'prado', 'land cruiser', 'vitz', 'fielder', 'harrier', 'rav4'], answer: "🚗 Great choice! We stock many parts for Toyota — Corolla, Hilux, Prado, Land Cruiser, Vitz, Fielder, Harrier, and RAV4. Search the part you need above!" },
+  { keywords: ['nissan', 'x-trail', 'tiida', 'note', 'patrol', 'navara', 'march'], answer: "🚗 Yes! We have parts for Nissan — X-Trail, Tiida, Note, Patrol, Navara, March, and more. Search the part you need above!" },
+  { keywords: ['subaru', 'forester', 'outback', 'impreza', 'legacy', 'brz'], answer: "🚗 We stock parts for Subaru models — Forester, Outback, Impreza, Legacy, and BRZ. Search the specific part above!" },
+  { keywords: ['mitsubishi', 'pajero', 'outlander', 'colt', 'eclipse'], answer: "🚗 We have parts for Mitsubishi — Pajero, Outlander, Colt, Eclipse, and more. Search the part you need above!" },
+  { keywords: ['honda', 'fit', 'civic', 'crv', 'accord', 'jazz'], answer: "🚗 We stock parts for Honda — Fit, Civic, CR-V, Accord, and Jazz. Search the specific part you need above!" },
+  { keywords: ['volkswagen', 'vw', 'golf', 'polo', 'passat', 'tiguan'], answer: "🚗 We carry parts for Volkswagen — Golf, Polo, Passat, and Tiguan. Search the part above or contact us for specific model availability!" },
+  { keywords: ['mercedes', 'benz', 'bmw', 'audi', 'european'], answer: "🚗 We stock some European car parts for Mercedes, BMW, and Audi. Contact us directly for availability as stock varies!" },
+  { keywords: ['isuzu', 'dmax', 'd-max', 'trooper', 'npr'], answer: "🚗 We have parts for Isuzu — D-Max, Trooper, NPR trucks, and more. Search the part or contact us for availability!" },
+  { keywords: ['mazda', 'cx-5', 'demio', 'atenza', 'familia'], answer: "🚗 We stock parts for Mazda — CX-5, Demio, Atenza, and Familia. Search the part above!" },
+  { keywords: ['suzuki', 'swift', 'alto', 'vitara', 'jimny'], answer: "🚗 We carry parts for Suzuki — Swift, Alto, Vitara, and Jimny. Search 'suzuki' or the specific part name above!" },
+
+  // PRICING
+  { keywords: ['price', 'cost', 'how much', 'expensive', 'cheap', 'affordable', 'bei'], answer: "💰 All product prices are shown on each product card. We offer competitive and affordable prices. Use the search bar to find the part and check its price!" },
+  { keywords: ['discount', 'offer', 'sale', 'deal', 'promo', 'coupon'], answer: "🔥 Yes! We have hot deals and flash sales running daily. Check the countdown timers on each product card. Don't miss out — deals expire!" },
+  { keywords: ['negotiate', 'bargain', 'lower price', 'reduce price'], answer: "🤝 For bulk orders or special requests, contact us on 📞 0705387545 and we'll see what we can do for you!" },
+  { keywords: ['bulk', 'wholesale', 'many', 'large order', 'fleet'], answer: "📦 We offer special pricing for bulk and wholesale orders! Call us on 📞 0705387545 to discuss bulk pricing for your fleet or business!" },
+
+  // PAYMENT
+  { keywords: ['payment', 'pay', 'mpesa', 'm-pesa', 'cash', 'card', 'lipa', 'checkout'], answer: "💳 We accept M-Pesa, cash, and card payments. Click 'Buy Now' on any product to go to the payment page. It's quick and secure!" },
+  { keywords: ['paybill', 'till', 'number', 'send money'], answer: "📱 Our M-Pesa PayBill and Till numbers are shown at the checkout page. Click 'Buy Now' on any product to proceed and see the details!" },
+  { keywords: ['invoice', 'receipt', 'proof of payment'], answer: "🧾 We provide receipts for all purchases. Contact us on 📞 0705387545 for any invoice requests!" },
+  { keywords: ['instalment', 'installment', 'pay later', 'credit'], answer: "💳 We currently accept full payment. For large orders, contact us on 📞 0705387545 to discuss flexible payment arrangements!" },
+
+  // DELIVERY
+  { keywords: ['delivery', 'shipping', 'deliver', 'send', 'courier', 'dispatch'], answer: "🚚 Yes! We deliver nationwide across Kenya. Nairobi: same day or next day. Upcountry: 2-3 business days. Call 📞 0705387545 for delivery cost to your area!" },
+  { keywords: ['nakuru', 'cbd', 'westlands', 'milimani', 'section58', 'langalanga', 'kasarani', 'pipeline'], answer: "📍 We deliver within Nakuru same day or next day. You can also visit our shop. Contact us on 📞 0705387545 for your exact area!" },
+  { keywords: ['upcountry', 'mombasa', 'kisumu', 'nakuru', 'eldoret', 'outside nairobi', 'nyeri', 'thika'], answer: "🚚 We deliver upcountry via courier. Delivery takes 2-3 business days. Extra charges may apply. Call 📞 0705387545 for a delivery quote!" },
+  { keywords: ['free delivery', 'free shipping', 'delivery fee', 'shipping cost'], answer: "🚚 Delivery fees depend on your location. Nairobi deliveries start from Ksh 200. Call 📞 0705387545 for exact charges to your area!" },
+  { keywords: ['how long', 'when will', 'duration', 'days to deliver', 'waiting'], answer: "⏰ Nairobi: same day or next day. Upcountry: 2-3 business days. We'll notify you once your order is dispatched!" },
+  { keywords: ['track', 'tracking', 'order status', 'where is my order'], answer: "📦 To track your order, contact us on 📞 0705387545 or WhatsApp and give us your order details. We'll update you immediately!" },
+
+  // RETURNS & WARRANTY
+  { keywords: ['return', 'refund', 'exchange', 'wrong part', 'damaged'], answer: "🔄 Easy return policy! If you receive a wrong or damaged part, contact us within 7 days on 📞 0705387545 and we'll sort it out quickly!" },
+  { keywords: ['warranty', 'guarantee', 'genuine', 'original', 'fake', 'counterfeit'], answer: "✅ All our parts are 100% genuine and come with a warranty. We do not sell counterfeit parts. Quality is our priority!" },
+  { keywords: ['quality', 'brand', 'trusted', 'reliable', 'best'], answer: "⭐ We only stock high-quality, genuine spare parts from trusted manufacturers. Your safety on the road is our top priority!" },
+
+  // CONTACT & LOCATION
+  { keywords: ['contact', 'call', 'phone', 'number', 'reach', 'whatsapp'], answer: "📞 Call or WhatsApp us on 0705387545. Available Monday–Saturday 8am–6pm. Email: wilmarkkorir@gmail.com" },
+  { keywords: ['location', 'address', 'where', 'shop', 'find you', 'directions', 'map'], answer: "📍 We are located in Nakuru, Kenya. Click the 'Location' page on our website for the exact address and Google Maps directions!" },
+  { keywords: ['open', 'working hours', 'hours', 'when open', 'close', 'closed', 'sunday'], answer: "🕗 Open Monday–Saturday: 8:00am – 6:00pm. Sunday: 10:00am – 4:00pm. Public holidays may vary!" },
+  { keywords: ['email', 'mail', 'write to'], answer: "📧 You can email us at wilmarkkorir@gmail.com. We respond within 24 hours on business days!" },
+
+  // ACCOUNT
+  { keywords: ['sign up', 'signup', 'register', 'create account', 'new account'], answer: "📝 Creating an account is easy! Click 'Sign Up' in the navigation bar, fill in your details, and you're ready to shop!" },
+  { keywords: ['sign in', 'signin', 'login', 'log in', 'password', 'forgot password'], answer: "🔐 Click 'Sign In' in the navigation bar to access your account. Forgot your password? Contact us on 📞 0705387545 and we'll help reset it!" },
+
+  // SELL / ADD PRODUCT
+  { keywords: ['sell', 'add product', 'list product', 'upload product', 'vendor', 'supplier', 'i want to sell'], answer: "🛠️ Want to sell your spare parts with us? Click 'Add Product' in the navigation bar to list your products and reach thousands of buyers!" },
+
+  // GENERAL
+  { keywords: ['thank', 'thanks', 'asante', 'sawa', 'okay', 'ok', 'great', 'good', 'perfect', 'awesome'], answer: "😊 You're welcome! Feel free to ask if you need anything else. Happy shopping at FitSpare Motors!" },
+  { keywords: ['bye', 'goodbye', 'see you', 'later', 'kwaheri', 'ciao'], answer: "👋 Goodbye! Thank you for visiting FitSpare Motors. Come back anytime — we're always here to help!" },
+  { keywords: ['help', 'assist', 'support', 'problem', 'issue', 'not working'], answer: "🙋 I'm here to help! Tell me what you need — a specific part, payment help, delivery info, or anything else!" },
+  { keywords: ['about', 'who are you', 'fitspare', 'company', 'business', 'about us'], answer: "🏢 FitSpare Motors is a trusted car spare parts shop in Kenya. We offer genuine, affordable parts with fast delivery. Our mission is to keep your car running perfectly!" },
+  { keywords: ['car not starting', 'wont start', "won't start", 'dead car'], answer: "🔧 A car that won't start could be a dead battery, bad starter motor, or fuel issue. We stock all these parts! Search above or call 📞 0705387545 for expert advice!" },
+  { keywords: ['noise', 'sound', 'knocking', 'squeaking', 'grinding'], answer: "🔊 Strange car noises can mean worn brake pads, suspension issues, or engine problems. We can help! Call 📞 0705387545 to describe the issue and we'll recommend the right part!" },
+  { keywords: ['smoke', 'burning', 'overheating', 'temperature'], answer: "🌡️ If your car is smoking or overheating, check your coolant, radiator, or thermostat. We stock all these parts. Act fast — overheating can damage your engine!" },
+  { keywords: ['service', 'service kit', 'maintenance', 'full service'], answer: "🔧 We sell service kits including oil filter, air filter, spark plugs, and engine oil. Perfect for a full car service. Search 'service kit' above!" },
+];
 
 const GetProducts = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState("");
   const [error, setError] = useState("");
+  const [cart, setCart] = useState([]);
+  const [cartOpen, setCartOpen] = useState(false);
+  const [wishlist, setWishlist] = useState([]);
+  const [toast, setToast] = useState(null);
+  const [timers, setTimers] = useState({});
+  const [search, setSearch] = useState("");
+
+  // ── CHAT STATE ──
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatMessages, setChatMessages] = useState([
+    { role: 'assistant', text: "Hi! 👋 Welcome to FitSpare Motors! Ask me about car parts, prices, delivery, payment, or anything else. I'm here to help!" }
+  ]);
+  const [chatInput, setChatInput] = useState('');
+  const [chatLoading, setChatLoading] = useState(false);
+  const chatBottomRef = useRef(null);
 
   const navigate = useNavigate();
   const img_url = "https://cyberspecter.alwaysdata.net/static/images/";
 
-  const APP_ID = "ca-app-pub-7212399669133407~2123650394";
-  const AD_UNIT_ID = "ca-app-pub-7212399669133407/8621835477";
+  // Check if user is logged in
+  const isLoggedIn = () => !!localStorage.getItem("user");
 
-  // Helper for transitions
-  const handleNav = async (path, state = {}) => {
-    if (Capacitor.isNativePlatform()) {
-      try { await AdMob.showInterstitial(); } catch (e) {}
+  const handleNav = (path, state = {}) => {
+    // Redirect to signup if trying to access checkout or add product without login
+    if (!isLoggedIn() && (path === '/makepayment' || path === '/addproduct')) {
+      navigate("/signup");
+    } else {
+      navigate(path, state);
     }
-    navigate(path, state);
   };
 
+  // Auto-scroll chat to bottom on new messages
   useEffect(() => {
-    const initAds = async () => {
-      if (!Capacitor.isNativePlatform()) return;
-      let adListener;
-      try {
-        await AdMob.initialize({ appId: APP_ID });
-        await AdMob.prepareInterstitial({ adUnitId: AD_UNIT_ID });
-        adListener = await AdMob.addListener('interstitialAdShowed', () => {
-          AdMob.prepareInterstitial({ adUnitId: AD_UNIT_ID });
+    if (chatBottomRef.current) {
+      chatBottomRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [chatMessages, chatLoading]);
+
+  // Filter products by search query
+  const filteredProducts = products.filter(p =>
+    p.product_name?.toLowerCase().includes(search.toLowerCase()) ||
+    p.product_description?.toLowerCase().includes(search.toLowerCase())
+  );
+
+  // Countdown timer per product (random 1–3 hrs)
+  useEffect(() => {
+    setTimers(prev => {
+      const initial = {};
+      products.forEach(p => {
+        if (!prev[p.id]) {
+          initial[p.id] = Math.floor(Math.random() * 7200) + 3600;
+        }
+      });
+      if (Object.keys(initial).length === 0) return prev;
+      return { ...prev, ...initial };
+    });
+  }, [products]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTimers(prev => {
+        const updated = {};
+        Object.entries(prev).forEach(([id, sec]) => {
+          updated[id] = sec > 0 ? sec - 1 : 0;
         });
-      } catch (e) { console.error("AdMob Error:", e); }
+        return updated;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
-      return () => {
-        if (adListener) adListener.remove();
-      };
-    };
-    const cleanup = initAds();
-    return () => cleanup.then(fn => fn && fn());
-  }, [AD_UNIT_ID, APP_ID]);
+  const formatTimer = (seconds) => {
+    if (!seconds) return "00:00:00";
+    const h = String(Math.floor(seconds / 3600)).padStart(2, '0');
+    const m = String(Math.floor((seconds % 3600) / 60)).padStart(2, '0');
+    const s = String(seconds % 60).padStart(2, '0');
+    return `${h}:${m}:${s}`;
+  };
 
-  // Fetch products from API
   const getProducts = async () => {
     setLoading("Loading products, please wait...");
     setError("");
@@ -57,66 +184,239 @@ const GetProducts = () => {
     }
   };
 
-  useEffect(() => {
-    getProducts();
-  }, []);
+  useEffect(() => { getProducts(); }, []);
+
+  // Cart helpers
+  const addToCart = (product) => {
+    if (!isLoggedIn()) {
+      navigate("/signup");
+      return;
+    }
+    setCart(prev => {
+      const exists = prev.find(i => i.id === product.id);
+      if (exists) return prev.map(i => i.id === product.id ? { ...i, qty: i.qty + 1 } : i);
+      return [...prev, { ...product, qty: 1 }];
+    });
+    showToast(`🛒 "${product.product_name}" added to cart!`);
+  };
+
+  const removeFromCart = (id) => setCart(prev => prev.filter(i => i.id !== id));
+  const updateQty = (id, delta) => {
+    setCart(prev => prev.map(i => i.id === id ? { ...i, qty: Math.max(1, i.qty + delta) } : i));
+  };
+  const cartTotal = cart.reduce((sum, i) => sum + i.product_cost * i.qty, 0);
+  const cartCount = cart.reduce((sum, i) => sum + i.qty, 0);
+
+  const toggleWishlist = (id) => {
+    if (!isLoggedIn()) {
+      navigate("/signup");
+      return;
+    }
+    setWishlist(prev => prev.includes(id) ? prev.filter(w => w !== id) : [...prev, id]);
+  };
+
+  const showToast = (msg) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  const fakeData = (id) => ({
+    sold: (id * 17 + 43) % 200 + 30,
+    rating: ((id * 7 + 41) % 4) / 2 + 3.5,
+    reviews: (id * 13 + 21) % 150 + 20,
+  });
+
+  const renderStars = (rating) => {
+    const full = Math.min(Math.floor(rating), 5);
+    const half = rating % 1 >= 0.5 && full < 5;
+    const emptyCount = Math.max(0, 5 - full - (half ? 1 : 0));
+    return '★'.repeat(full) + (half ? '☆' : '') + '☆'.repeat(emptyCount);
+  };
+
+  const highlight = (text) => {
+    if (!search || !text) return text;
+    const regex = new RegExp(`(${search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+    const parts = String(text).split(regex);
+    return parts.map((part, i) =>
+      regex.test(part) ? <mark key={i}>{part}</mark> : part
+    );
+  };
+
+  // ── SEND CHAT MESSAGE ──
+  const sendChatMessage = () => {
+    if (!chatInput.trim() || chatLoading) return;
+
+    const userText = chatInput.toLowerCase();
+    const userMessage = { role: 'user', text: chatInput };
+    setChatMessages(prev => [...prev, userMessage]);
+    setChatInput('');
+    setChatLoading(true);
+
+    const match = chatAnswers.find(item =>
+      item.keywords.some(keyword => userText.includes(keyword))
+    );
+
+    setTimeout(() => {
+      setChatMessages(prev => [...prev, {
+        role: 'assistant',
+        text: match
+          ? match.answer
+          : "I'm not sure about that 🤔 Please call us on 📞 0705387545 or WhatsApp for more help. We're happy to assist!"
+      }]);
+      setChatLoading(false);
+    }, 800);
+  };
+
+  // ── QUICK QUESTION CHIPS ──
+  const quickQuestions = [
+    "Do you have brake pads?",
+    "How do I pay?",
+    "Do you deliver?",
+    "Working hours?",
+    "Return policy?",
+    "Toyota parts?",
+  ];
+
+  const sendQuickQuestion = (question) => {
+    if (chatLoading) return;
+    const userText = question.toLowerCase();
+    setChatMessages(prev => [...prev, { role: 'user', text: question }]);
+    setChatLoading(true);
+    const match = chatAnswers.find(item =>
+      item.keywords.some(keyword => userText.includes(keyword))
+    );
+    setTimeout(() => {
+      setChatMessages(prev => [...prev, {
+        role: 'assistant',
+        text: match
+          ? match.answer
+          : "Please call us on 📞 0705387545 for more help on that!"
+      }]);
+      setChatLoading(false);
+    }, 800);
+  };
 
   return (
-    <div className="d-flex flex-column min-vh-100">
+    <div className="d-flex flex-column min-vh-100" style={{ fontFamily: "'Segoe UI', sans-serif" }}>
 
-  {/* NAVBAR */}
-    {/* NAVBAR */}
+      {/* TOAST */}
+      {toast && (
+        <div style={{
+          position: 'fixed', top: 20, right: 20, zIndex: 9999,
+          background: '#1a1a2e', color: '#fff', padding: '14px 22px',
+          borderRadius: 12, boxShadow: '0 8px 30px rgba(0,0,0,0.4)',
+          fontWeight: 600, fontSize: '0.95rem', animation: 'slideInRight 0.4s ease',
+          borderLeft: '4px solid #ff7e5f'
+        }}>
+          {toast}
+        </div>
+      )}
+
+      {/* CART DRAWER */}
+      <div style={{
+        position: 'fixed', top: 0, right: cartOpen ? 0 : '-420px',
+        width: 400, height: '100vh', background: '#fff',
+        boxShadow: '-8px 0 40px rgba(0,0,0,0.25)',
+        zIndex: 9000, transition: 'right 0.4s cubic-bezier(0.4,0,0.2,1)',
+        display: 'flex', flexDirection: 'column', overflowY: 'auto'
+      }}>
+        <div style={{ background: 'linear-gradient(90deg,#ff7e5f,#feb47b)', padding: '18px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h5 style={{ margin: 0, color: '#fff', fontWeight: 700 }}>🛒 Your Cart ({cartCount})</h5>
+          <button onClick={() => setCartOpen(false)} style={{ background: 'none', border: 'none', color: '#fff', fontSize: 24, cursor: 'pointer', lineHeight: 1 }}>✕</button>
+        </div>
+        <div style={{ flex: 1, overflowY: 'auto', padding: 16 }}>
+          {cart.length === 0 ? (
+            <div style={{ textAlign: 'center', marginTop: 60, color: '#999' }}>
+              <div style={{ fontSize: 60 }}>🛒</div>
+              <p style={{ marginTop: 12, fontWeight: 600 }}>Your cart is empty</p>
+              <p style={{ fontSize: '0.85rem' }}>Add some products to get started!</p>
+            </div>
+          ) : cart.map(item => (
+            <div key={item.id} style={{ display: 'flex', gap: 12, marginBottom: 16, padding: 12, borderRadius: 12, background: '#fff8f6', border: '1px solid #ffe0d6' }}>
+              <img src={img_url + item.product_photo} alt={item.product_name} style={{ width: 70, height: 70, objectFit: 'cover', borderRadius: 10 }} />
+              <div style={{ flex: 1 }}>
+                <p style={{ margin: 0, fontWeight: 700, fontSize: '0.9rem' }}>{item.product_name}</p>
+                <p style={{ margin: '2px 0 8px', color: '#ff4500', fontWeight: 700 }}>Ksh {item.product_cost}</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <button onClick={() => updateQty(item.id, -1)} style={{ width: 28, height: 28, borderRadius: '50%', border: '1.5px solid #ff7e5f', background: '#fff', color: '#ff7e5f', fontWeight: 700, cursor: 'pointer' }}>−</button>
+                  <span style={{ fontWeight: 700 }}>{item.qty}</span>
+                  <button onClick={() => updateQty(item.id, 1)} style={{ width: 28, height: 28, borderRadius: '50%', border: 'none', background: '#ff7e5f', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>+</button>
+                </div>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                <p style={{ margin: 0, fontWeight: 700, color: '#333' }}>Ksh {(item.product_cost * item.qty).toLocaleString()}</p>
+                <button onClick={() => removeFromCart(item.id)} style={{ background: 'none', border: 'none', color: '#ccc', cursor: 'pointer', fontSize: 18 }}>🗑</button>
+              </div>
+            </div>
+          ))}
+        </div>
+        {cart.length > 0 && (
+          <div style={{ padding: '16px 20px', borderTop: '1px solid #f0e0dd' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: '1.1rem', marginBottom: 14 }}>
+              <span>Total</span>
+              <span style={{ color: '#ff4500' }}>Ksh {cartTotal.toLocaleString()}</span>
+            </div>
+            <button
+              onClick={() => { setCartOpen(false); handleNav('/makepayment', { state: { cart } }); }}
+              style={{ width: '100%', padding: '14px', background: 'linear-gradient(90deg,#ff7e5f,#feb47b)', border: 'none', borderRadius: 12, color: '#fff', fontWeight: 700, fontSize: '1rem', cursor: 'pointer', letterSpacing: '0.5px' }}
+            >
+              Proceed to Checkout →
+            </button>
+            <button onClick={() => setCart([])} style={{ width: '100%', marginTop: 8, padding: '10px', background: 'none', border: '1.5px solid #ddd', borderRadius: 12, color: '#999', fontWeight: 600, cursor: 'pointer' }}>
+              Clear Cart
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Cart overlay */}
+      {cartOpen && <div onClick={() => setCartOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 8999 }} />}
+
+      {/* NAVBAR */}
       <nav className="navbar navbar-expand-md offer-navbar sticky-top">
         <div className="container">
-          <img
-            src="/images2/logo 1.jpeg"
-            alt="FitSpare Logo"
-            className="navbar-logo me-2"
-          />
-          <Link to="/" className="navbar-brand fw-bold text-light">
-            FitSpare Motors
-          </Link>
-          <button
-            className="navbar-toggler"
-            type="button"
-            data-bs-toggle="collapse"
-            data-bs-target="#navbarCollapse"
-            aria-controls="navbarCollapse"
-            aria-expanded="false"
-            aria-label="Toggle navigation"
-          >
+          <img src="/images2/logo 1.jpeg" alt="FitSpare Logo" className="navbar-logo me-2" />
+          <Link to="/" className="navbar-brand fw-bold text-light">FitSpare Motors</Link>
+          <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
             <span className="navbar-toggler-icon"></span>
           </button>
           <div className="collapse navbar-collapse" id="navbarCollapse">
-            <div className="navbar-nav ms-auto">
+            <div className="navbar-nav ms-auto align-items-center">
               <Link to="/" className="nav-link active">Home</Link>
               <Link to="/addproduct" className="nav-link">Add Product</Link>
               <Link to="/signup" className="nav-link">Sign Up</Link>
               <Link to="/signin" className="nav-link">Sign In</Link>
-              <Link to="/aboutus" className="nav-link offer-link active">About Us</Link>
+              <Link to="/aboutus" className="nav-link offer-link">About Us</Link>
+              <Link to="/location" className="nav-link offer-link">Location</Link>
+              <button onClick={() => setCartOpen(true)} style={{
+                marginLeft: 12, background: 'rgba(255,255,255,0.15)', border: '1.5px solid rgba(255,255,255,0.5)',
+                borderRadius: 30, color: '#fff', padding: '6px 16px', fontWeight: 700, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: 6, backdropFilter: 'blur(6px)'
+              }}>
+                🛒 Cart
+                {cartCount > 0 && (
+                  <span style={{ background: '#ff4500', color: '#fff', borderRadius: '50%', width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 800 }}>
+                    {cartCount}
+                  </span>
+                )}
+              </button>
             </div>
           </div>
         </div>
       </nav>
 
-      {/* CENTERED ANIMATED OFFER WORDS */}
+      {/* ANIMATED OFFER BANNER */}
       <div className="offer-words d-flex justify-content-center align-items-center">
         <div className="fade-text-wrapper">
           <span className="fade-text">🔥 Best Deals on Car Parts! 🔥</span>
-          <span className="fade-text">💥 Limited Time Offers! 💥</span>
-          <span className="fade-text">🚗 Genuine & Affordable! 🚗</span>
+          <span className="fade-text">💥 Flash Sale — Don't Miss Out! 💥</span>
+          <span className="fade-text">🚗 Genuine & Affordable Parts! 🚗</span>
           <span className="fade-text">⚡ Fast Delivery & Trusted Quality! ⚡</span>
         </div>
       </div>
 
-      {/* STYLES */}
       <style>{`
-        /* Navbar Styles */
-        .offer-navbar {
-          background: linear-gradient(90deg, #ff7e5f, #feb47b);
-          box-shadow: 0 4px 15px rgba(0,0,0,0.25);
-          padding: 0.8rem 1rem;
-        }
+        .offer-navbar { background: linear-gradient(90deg, #ff7e5f, #feb47b); box-shadow: 0 4px 15px rgba(0,0,0,0.25); padding: 0.8rem 1rem; }
         .offer-navbar .navbar-brand { font-size: 1.5rem; letter-spacing: 1px; transition: transform 0.3s; }
         .offer-navbar .navbar-brand:hover { transform: scale(1.1); color: #fff8dc; }
         .offer-navbar .nav-link { color: white; margin-left: 0.5rem; font-weight: 500; position: relative; transition: all 0.3s; }
@@ -125,429 +425,436 @@ const GetProducts = () => {
         .offer-navbar .nav-link.active { font-weight: 700; color: #ffe066; }
         .navbar-logo { height: 45px; width: 45px; border-radius: 50%; border: 2px solid #fff; transition: transform 0.3s ease; }
         .navbar-logo:hover { transform: rotate(15deg) scale(1.1); }
-        .navbar-light .navbar-toggler-icon { background-image: url("data:image/svg+xml;charset=utf8,%3Csvg viewBox='0 0 30 30' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath stroke='rgba%28255, 255, 255, 0.8%29' stroke-width='2' stroke-linecap='round' stroke-miterlimit='10' d='M4 7h22M4 15h22M4 23h22'/ %3E%3C/svg%3E"); }
 
-        /* Offer words container */
-        .offer-words {
-          background: linear-gradient(135deg, #f0f0f0, #d9d9d9);
-          height: 150px;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          position: relative;
-          overflow: hidden;
-        }
-
-        .fade-text-wrapper {
-          position: relative;
-          width: 100%;
-          text-align: center;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          height: 100%;
-        }
-
-        .fade-text {
-          position: absolute;
-          opacity: 0;
-          font-size: 2rem;
-          font-weight: bold;
-          color: #ff4500;
-          text-shadow: 2px 2px 5px rgba(0,0,0,0.3);
-          animation: fadeInOut 8s infinite;
-        }
-
+        .offer-words { background: linear-gradient(135deg, #1a1a2e, #16213e); height: 80px; overflow: hidden; }
+        .fade-text-wrapper { position: relative; width: 100%; text-align: center; display: flex; justify-content: center; align-items: center; height: 100%; }
+        .fade-text { position: absolute; opacity: 0; font-size: 1.4rem; font-weight: 800; color: #feb47b; text-shadow: 0 0 20px rgba(255,180,123,0.5); animation: fadeInOut 8s infinite; letter-spacing: 1px; }
         .fade-text:nth-child(1) { animation-delay: 0s; }
         .fade-text:nth-child(2) { animation-delay: 2s; }
         .fade-text:nth-child(3) { animation-delay: 4s; }
         .fade-text:nth-child(4) { animation-delay: 6s; }
+        @keyframes fadeInOut { 0%,20%{opacity:0;transform:translateY(20px)} 25%,50%{opacity:1;transform:translateY(0)} 55%,100%{opacity:0;transform:translateY(-20px)} }
+        @keyframes slideInRight { from{transform:translateX(80px);opacity:0} to{transform:translateX(0);opacity:1} }
 
-        @keyframes fadeInOut {
-          0%, 20% { opacity: 0; transform: translateY(20px); }
-          25%, 50% { opacity: 1; transform: translateY(0); }
-          55%, 100% { opacity: 0; transform: translateY(-20px); }
-        }
+        .carousel-img { height: 520px; object-fit: cover; }
+        .colourful-caption { background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); border-radius: 16px; padding: 20px 28px; }
+        .colourful-caption h1 { font-weight: 800; letter-spacing: 0.5px; }
+        .features { font-size: 0.95rem; color: #ffe066; letter-spacing: 0.5px; }
+
+        .search-section { background: linear-gradient(135deg,#fff8f5,#fff3e0); padding: 28px 20px; border-bottom: 1px solid #ffe0d6; }
+        .search-wrap { max-width: 640px; margin: 0 auto; display: flex; align-items: center; background: #fff; border-radius: 50px; box-shadow: 0 6px 30px rgba(255,126,95,0.18); border: 2px solid #ffe0d6; overflow: hidden; transition: border-color 0.3s, box-shadow 0.3s; }
+        .search-wrap:focus-within { border-color: #ff7e5f; box-shadow: 0 8px 36px rgba(255,126,95,0.28); }
+        .search-icon { padding: 0 16px; font-size: 1.2rem; color: #ff7e5f; flex-shrink: 0; }
+        .search-input { flex: 1; border: none; outline: none; padding: 14px 4px; font-size: 1rem; font-weight: 500; color: #1a1a2e; background: transparent; }
+        .search-input::placeholder { color: #bbb; font-weight: 400; }
+        .search-clear { background: none; border: none; color: #ccc; font-size: 1.1rem; cursor: pointer; padding: 0 10px; transition: color 0.2s; flex-shrink: 0; }
+        .search-clear:hover { color: #ff4500; }
+        .search-btn { background: linear-gradient(90deg,#ff7e5f,#feb47b); border: none; color: #fff; font-weight: 800; padding: 14px 28px; font-size: 0.95rem; cursor: pointer; flex-shrink: 0; transition: opacity 0.2s; letter-spacing: 0.3px; }
+        .search-btn:hover { opacity: 0.88; }
+        .search-meta { text-align: center; margin-top: 12px; font-size: 0.85rem; color: #aaa; font-weight: 500; }
+        .search-meta b { color: #ff7e5f; }
+        .tag-row { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+        .tag { background: #fff; border: 1.5px solid #ffe0d6; border-radius: 30px; padding: 5px 14px; font-size: 0.8rem; font-weight: 600; color: #ff7e5f; cursor: pointer; transition: all 0.2s; }
+        .tag:hover { background: #ff7e5f; color: #fff; border-color: #ff7e5f; }
+
+        .no-results { text-align: center; padding: 60px 20px; }
+        .no-results-icon { font-size: 64px; }
+        .no-results h4 { color: #1a1a2e; font-weight: 800; margin: 16px 0 8px; }
+        .no-results p { color: #999; font-size: 0.9rem; }
+        .no-results-btn { margin-top: 16px; background: linear-gradient(90deg,#ff7e5f,#feb47b); border: none; border-radius: 30px; color: #fff; font-weight: 700; padding: 11px 28px; cursor: pointer; font-size: 0.95rem; }
+
+        .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 28px; padding: 0 20px 40px; }
+        .product-card { background: #fff; border-radius: 18px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.08); transition: transform 0.35s ease, box-shadow 0.35s ease; display: flex; flex-direction: column; animation: fadeInUp 0.7s both; position: relative; }
+        .product-card:hover { transform: translateY(-8px); box-shadow: 0 20px 50px rgba(255,126,95,0.2); }
+        @keyframes fadeInUp { from{opacity:0;transform:translateY(36px)} to{opacity:1;transform:translateY(0)} }
+        .img-wrap { position: relative; overflow: hidden; height: 210px; background: #f7f7f7; }
+        .img-wrap img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s ease; }
+        .product-card:hover .img-wrap img { transform: scale(1.07); }
+        .img-overlay { position: absolute; inset: 0; background: rgba(26,26,46,0.55); display: flex; justify-content: center; align-items: center; gap: 10px; opacity: 0; transition: opacity 0.35s ease; }
+        .product-card:hover .img-overlay { opacity: 1; }
+        .overlay-btn { padding: 9px 18px; border-radius: 30px; font-weight: 700; font-size: 0.85rem; cursor: pointer; border: none; transition: transform 0.2s, box-shadow 0.2s; }
+        .overlay-btn:hover { transform: scale(1.08); box-shadow: 0 6px 18px rgba(0,0,0,0.3); }
+        .badge-hot { position: absolute; top: 12px; left: 12px; background: linear-gradient(135deg,#ff4500,#ff7e5f); color: #fff; padding: 5px 11px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; z-index: 2; box-shadow: 0 4px 12px rgba(255,69,0,0.4); }
+        .badge-sold { position: absolute; top: 12px; right: 12px; background: rgba(26,26,46,0.85); color: #feb47b; padding: 5px 11px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; z-index: 2; backdrop-filter: blur(4px); }
+        .wishlist-btn { position: absolute; bottom: 12px; right: 12px; z-index: 3; background: rgba(255,255,255,0.9); border: none; border-radius: 50%; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 3px 10px rgba(0,0,0,0.15); font-size: 16px; transition: transform 0.2s; }
+        .wishlist-btn:hover { transform: scale(1.2); }
+        .card-body-inner { padding: 16px 18px 18px; display: flex; flex-direction: column; flex: 1; }
+        .product-name { font-weight: 800; font-size: 1rem; color: #1a1a2e; margin-bottom: 4px; line-height: 1.3; }
+        .product-desc { font-size: 0.82rem; color: #888; margin-bottom: 10px; line-height: 1.5; flex: 1; }
+        .stars { color: #f7b731; font-size: 0.9rem; letter-spacing: 2px; }
+        .reviews { font-size: 0.78rem; color: #aaa; margin-left: 6px; }
+        .price-row { display: flex; align-items: baseline; gap: 8px; margin: 10px 0 14px; flex-wrap: wrap; }
+        .price { font-size: 1.3rem; font-weight: 800; color: #ff4500; }
+        .original-price { font-size: 0.85rem; color: #bbb; text-decoration: line-through; }
+        .discount-badge { background: #e8f7ee; color: #1db954; font-size: 0.75rem; font-weight: 700; padding: 2px 8px; border-radius: 20px; }
+        .countdown-row { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; padding: 8px 12px; background: #fff8f5; border-radius: 10px; border: 1px solid #ffe0d6; }
+        .countdown-label { font-size: 0.75rem; font-weight: 700; color: #ff7e5f; text-transform: uppercase; letter-spacing: 0.5px; }
+        .countdown-timer { font-size: 0.85rem; font-weight: 800; color: #ff4500; font-variant-numeric: tabular-nums; letter-spacing: 1px; }
+        .countdown-bar-wrap { height: 3px; background: #ffe0d6; border-radius: 4px; overflow: hidden; margin-top: 4px; }
+        .countdown-bar { height: 100%; background: linear-gradient(90deg,#ff7e5f,#feb47b); border-radius: 4px; transition: width 1s linear; }
+        .watchers { display: flex; align-items: center; gap: 5px; font-size: 0.78rem; color: #888; margin-bottom: 10px; }
+        .watcher-dot { width: 7px; height: 7px; background: #1db954; border-radius: 50%; animation: pulse 1.5s infinite; flex-shrink: 0; }
+        @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(1.5)} }
+        .btn-buy { flex: 1; padding: 11px; border-radius: 12px; border: none; background: linear-gradient(90deg,#ff7e5f,#feb47b); color: #fff; font-weight: 800; font-size: 0.9rem; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
+        .btn-buy:hover { transform: scale(1.04); box-shadow: 0 8px 24px rgba(255,126,95,0.4); }
+        .btn-cart { padding: 11px 14px; border-radius: 12px; border: 2px solid #ff7e5f; background: transparent; color: #ff7e5f; font-weight: 700; font-size: 0.95rem; cursor: pointer; transition: all 0.2s; }
+        .btn-cart:hover { background: #ff7e5f; color: #fff; transform: scale(1.04); }
+        .section-title { font-size: 1.9rem; font-weight: 900; color: #1a1a2e; letter-spacing: -0.5px; }
+        .section-sub { color: #888; font-size: 0.95rem; margin-bottom: 30px; }
+        .trust-bar { display: flex; justify-content: center; gap: 30px; flex-wrap: wrap; padding: 18px 20px; background: #fff8f5; border-top: 1px solid #ffe0d6; border-bottom: 1px solid #ffe0d6; margin-bottom: 0; }
+        .trust-item { display: flex; align-items: center; gap: 8px; font-size: 0.88rem; font-weight: 600; color: #555; }
+        .trust-icon { font-size: 1.3rem; }
+        mark { background: #fff3cd; border-radius: 3px; padding: 0 2px; font-weight: 700; color: #b35c00; }
+
+        /* CHAT STYLES */
+        .chat-bubble-bot { background: #fff; border: 1px solid #ffe0d6; border-radius: 14px 14px 14px 4px; padding: 10px 14px; max-width: 78%; font-size: 0.85rem; color: #1a1a2e; line-height: 1.5; }
+        .chat-bubble-user { background: #ff7e5f; border-radius: 14px 14px 4px 14px; padding: 10px 14px; max-width: 78%; font-size: 0.85rem; color: #fff; line-height: 1.5; }
+        .chat-chip { background: #fff; border: 1.5px solid #ffe0d6; border-radius: 20px; padding: 5px 12px; font-size: 0.78rem; font-weight: 600; color: #ff7e5f; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+        .chat-chip:hover { background: #ff7e5f; color: #fff; border-color: #ff7e5f; }
+        @keyframes chatBounce { 0%,100%{transform:translateY(0);opacity:0.5} 50%{transform:translateY(-5px);opacity:1} }
+        @keyframes chatSlideUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
       `}</style>
-      {/* ========== CAROUSEL ========== */}
- <section className="row">
-      <div className="col-12">
-        <div
-          id="mycarousel"
-          className="carousel slide"
-          data-bs-ride="carousel"
-          data-bs-interval="3000"
-        >
-          {/* Indicators */}
-          <div className="carousel-indicators">
-            <button
-              type="button"
-              data-bs-target="#mycarousel"
-              data-bs-slide-to="0"
-              className="active"
-            ></button>
-            <button type="button" data-bs-target="#mycarousel" data-bs-slide-to="1"></button>
-            <button type="button" data-bs-target="#mycarousel" data-bs-slide-to="2"></button>
-            <button type="button" data-bs-target="#mycarousel" data-bs-slide-to="3"></button>
+
+      {/* CAROUSEL */}
+      <section className="row">
+        <div className="col-12">
+          <div id="mycarousel" className="carousel slide" data-bs-ride="carousel" data-bs-interval="3000">
+            <div className="carousel-indicators">
+              <button type="button" data-bs-target="#mycarousel" data-bs-slide-to="0" className="active"></button>
+              <button type="button" data-bs-target="#mycarousel" data-bs-slide-to="1"></button>
+              <button type="button" data-bs-target="#mycarousel" data-bs-slide-to="2"></button>
+              <button type="button" data-bs-target="#mycarousel" data-bs-slide-to="3"></button>
+            </div>
+            <div className="carousel-inner">
+              <div className="carousel-item active" onClick={() => { if (products.length > 0) handleNav("/makepayment", { state: { product: products[0] } }); }} style={{ cursor: "pointer" }}>
+                <img src="/images2/willy 90.jpeg" className="d-block w-100 carousel-img" alt="slide1" />
+                <div className="carousel-caption colourful-caption">
+                  <span className="badge bg-warning text-dark mb-2">🔥 Special Offer Available</span>
+                  <h1>Welcome to FitSpare Motors</h1>
+                  <p>Your trusted destination for genuine car spare parts.</p>
+                  <p className="features">✔ Genuine Parts | ✔ Affordable Prices | ✔ Trusted Quality</p>
+                  <button className="btn btn-danger me-2" onClick={(e) => { e.stopPropagation(); if (products.length > 0) addToCart(products[0]); }}>Add to Cart</button>
+                  <button className="btn btn-warning" onClick={(e) => { e.stopPropagation(); if (products.length > 0) handleNav("/makepayment", { state: { product: products[0] } }); }}>Shop Now</button>
+                </div>
+              </div>
+              <div className="carousel-item" onClick={() => handleNav("/addproduct")} style={{ cursor: "pointer" }}>
+                <img src="/images2/willy 91.jpeg" className="d-block w-100 carousel-img" alt="slide2" />
+                <div className="carousel-caption colourful-caption">
+                  <h1>Want to Sell Your Spare Parts?</h1>
+                  <p>Add your product quickly and reach thousands of buyers.</p>
+                  <p className="features">➕ Add Product | ⚙ Easy Upload | 🛠 Secure Listing</p>
+                  <button className="btn btn-warning" onClick={(e) => { e.stopPropagation(); handleNav("/addproduct"); }}>Add Product</button>
+                </div>
+              </div>
+              <div className="carousel-item" onClick={() => { const s = document.getElementById("products-section"); if (s) s.scrollIntoView({ behavior: "smooth" }); }} style={{ cursor: "pointer" }}>
+                <img src="/images2/willy 93.jpeg" className="d-block w-100 carousel-img" alt="slide3" />
+                <div className="carousel-caption colourful-caption">
+                  <h1>Secure & Easy Payment</h1>
+                  <p>Pay quickly and safely for the parts you need.</p>
+                  <p className="features">💳 Multiple Payment Options | 🔒 Safe & Reliable</p>
+                  <button className='btn btn-outline-light' onClick={(e) => { e.stopPropagation(); const s = document.getElementById("products-section"); if (s) s.scrollIntoView({ behavior: "smooth" }); }}>View Catalog</button>
+                </div>
+              </div>
+              <div className="carousel-item" onClick={() => handleNav("/signin")} style={{ cursor: "pointer" }}>
+                <img src="/images2/willy 94.jpeg" className="d-block w-100 carousel-img" alt="slide4" />
+                <div className="carousel-caption colourful-caption">
+                  <h1>Join FitSpare Motors</h1>
+                  <p>Sign in or sign up to start buying or selling today.</p>
+                  <p className="features">🔐 Sign In | 📝 Sign Up | ⭐ Trusted Community</p>
+                  <button className="btn btn-outline-light me-2" onClick={(e) => { e.stopPropagation(); handleNav("/signin"); }}>Sign In</button>
+                  <button className="btn btn-primary" onClick={(e) => { e.stopPropagation(); handleNav("/signup"); }}>Sign Up</button>
+                </div>
+              </div>
+            </div>
+            <button className="carousel-control-prev" type="button" data-bs-target="#mycarousel" data-bs-slide="prev"><span className="carousel-control-prev-icon"></span></button>
+            <button className="carousel-control-next" type="button" data-bs-target="#mycarousel" data-bs-slide="next"><span className="carousel-control-next-icon"></span></button>
           </div>
+        </div>
+      </section>
 
-          {/* Carousel Slides */}
-          <div className="carousel-inner">
+      {/* TRUST BAR */}
+      <div className="trust-bar">
+        <div className="trust-item"><span className="trust-icon">🔒</span> Secure Payments</div>
+        <div className="trust-item"><span className="trust-icon">🚚</span> Fast Delivery Nationwide</div>
+        <div className="trust-item"><span className="trust-icon">✅</span> 100% Genuine Parts</div>
+        <div className="trust-item"><span className="trust-icon">🔄</span> Easy Returns</div>
+        <div className="trust-item"><span className="trust-icon">📞</span> 24/7 Support</div>
+      </div>
 
-            {/* Slide 1 → GetProducts */}
-            <div
-              className="carousel-item active"
-              onClick={() => {
-                if (products.length > 0) {
-                  handleNav("/makepayment", { state: { product: products[0] } });
-                }
-              }}
-              style={{ cursor: "pointer" }}
-            >
-              <img src="/images2/willy 90.jpeg" className="d-block w-100 carousel-img" alt="slide1" />
-              <div className="carousel-caption colourful-caption">
-                <span className="badge bg-warning text-dark mb-2">🔥 Special Offer Available</span>
-                <h1>Welcome to FitSpare Motors</h1>
-                <p>Your trusted destination for genuine car spare parts.</p>
-                <p className="features">✔ Genuine Parts | ✔ Affordable Prices | ✔ Trusted Quality</p>
-                <button 
-                  className="btn btn-danger me-2"
-                  onClick={(e) => {
-                    e.stopPropagation(); // Prevents the parent div's onClick from firing twice
-                    if (products.length > 0) {
-                      handleNav("/makepayment", { state: { product: products[0] } });
-                    }
-                  }}
-                >
-                  Shop Now
-                </button>
-              </div>
-            </div>
-
-            {/* Slide 2 → AddProduct */}
-            <div
-              className="carousel-item"
-              onClick={() => handleNav("/addproduct")}
-              style={{ cursor: "pointer" }}
-            >
-              <img src="/images2/willy 91.jpeg" className="d-block w-100 carousel-img" alt="slide2" />
-              <div className="carousel-caption colourful-caption">
-                <h1>Want to Sell Your Spare Parts?</h1>
-                <p>Add your product quickly and reach thousands of buyers.</p>
-                <p className="features">➕ Add Product | ⚙ Easy Upload | 🛠 Secure Listing</p>
-                <button 
-                  className="btn btn-warning"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleNav("/addproduct");
-                  }}
-                >Add Product</button>
-              </div>
-            </div>
-
-            {/* Slide 3 → MakePayment */}
-            <div
-              className="carousel-item"
-              onClick={() => {
-                const section = document.getElementById("products-section");
-                if (section) section.scrollIntoView({ behavior: "smooth" });
-              }}
-              style={{ cursor: "pointer" }}
-            >
-              <img src="/images2/willy 93.jpeg" className="d-block w-100 carousel-img" alt="slide3" />
-              <div className="carousel-caption colourful-caption">
-                <h1>Secure & Easy Payment</h1>
-                <p>Pay quickly and safely for the parts you need.</p>
-                <p className="features">💳 Multiple Payment Options | 🔒 Safe & Reliable</p>
-                <button 
-                  className='btn btn-outline-light'
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    const section = document.getElementById("products-section");
-                    if (section) {
-                      section.scrollIntoView({ behavior: "smooth" });
-                    }
-                  }}
-                >
-                  View Catalog
-                </button>
-              </div>
-            </div>
-
-            {/* Slide 4 → SignIn / SignUp */}
-            <div
-              className="carousel-item"
-              onClick={() => handleNav("/signin")}
-              style={{ cursor: "pointer" }}
-            >
-              <img src="/images2/willy 94.jpeg" className="d-block w-100 carousel-img" alt="slide4" />
-              <div className="carousel-caption colourful-caption">
-                <h1>Join FitSpare Motors</h1>
-                <p>Sign in or sign up to start buying or selling today.</p>
-                <p className="features">🔐 Sign In | 📝 Sign Up | ⭐ Trusted Community</p>
-                <button className="btn btn-outline-light me-2" onClick={(e) => { e.stopPropagation(); handleNav("/signin"); }}>Sign In</button>
-                <button className="btn btn-primary" onClick={(e) => { e.stopPropagation(); handleNav("/signup"); }}>Sign Up</button>
-              </div>
-            </div>
-
+      {/* SEARCH BAR */}
+      <div className="search-section">
+        <div className="search-wrap">
+          <span className="search-icon">🔍</span>
+          <input
+            type="text"
+            className="search-input"
+            placeholder="Search by part name or description…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Escape') setSearch(''); }}
+          />
+          {search && (
+            <button className="search-clear" onClick={() => setSearch('')} title="Clear">✕</button>
+          )}
+          <button className="search-btn">Search</button>
+        </div>
+        <p className="search-meta">
+          {search
+            ? <><b>{filteredProducts.length}</b> result{filteredProducts.length !== 1 ? 's' : ''} for "<b>{search}</b>"</>
+            : <><b>{products.length}</b> products available — search to find what you need</>
+          }
+        </p>
+        {!search && (
+          <div className="tag-row">
+            {['Brake Pads', 'Engine Oil', 'Air Filter', 'Spark Plug', 'Shock Absorber', 'Battery', 'Clutch', 'Radiator'].map(tag => (
+              <button key={tag} className="tag" onClick={() => { setSearch(tag); document.getElementById('products-section')?.scrollIntoView({ behavior: 'smooth' }); }}>
+                {tag}
+              </button>
+            ))}
           </div>
+        )}
+      </div>
 
-          {/* Controls */}
-          <button className="carousel-control-prev" type="button" data-bs-target="#mycarousel" data-bs-slide="prev">
-            <span className="carousel-control-prev-icon"></span>
-          </button>
-          <button className="carousel-control-next" type="button" data-bs-target="#mycarousel" data-bs-slide="next">
-            <span className="carousel-control-next-icon"></span>
-          </button>
+      {/* PRODUCTS SECTION */}
+      <div id="products-section" style={{ padding: '40px 30px 60px' }}>
+        <div style={{ textAlign: 'center', marginBottom: 8 }}>
+          <h3 className="section-title">
+            {search ? `Results for "${search}"` : '🔥 Hot Offers — Today\'s Best Deals'}
+          </h3>
+          <p className="section-sub">
+            {search
+              ? `Showing ${filteredProducts.length} matching product${filteredProducts.length !== 1 ? 's' : ''}`
+              : 'Limited-time prices on genuine car spare parts. Order before the deal expires!'}
+          </p>
+        </div>
 
+        {loading && <h4 className='text-info text-center mb-3'>{loading}</h4>}
+        {error && <h4 className='text-danger text-center mb-3'>{error}</h4>}
+
+        {!loading && search && filteredProducts.length === 0 && (
+          <div className="no-results">
+            <div className="no-results-icon">🔍</div>
+            <h4>No results for "{search}"</h4>
+            <p>Try a different keyword — e.g. "brake", "engine", "filter", "oil"</p>
+            <button className="no-results-btn" onClick={() => setSearch('')}>← Browse All Products</button>
+          </div>
+        )}
+
+        <div className="product-grid">
+          {filteredProducts.map((product, index) => {
+            const { sold, rating, reviews } = fakeData(product.id || index);
+            const watchers = (product.id || index) % 13 + 3;
+            const timeLeft = timers[product.id] || 0;
+            const barWidth = Math.round((timeLeft / 7200) * 100);
+            const discountPct = ((product.id || index) % 4) * 5 + 10;
+            const originalPrice = Math.round(product.product_cost * (1 + discountPct / 100));
+            const inWishlist = wishlist.includes(product.id);
+
+            return (
+              <div className="product-card" key={product.id || index} style={{ animationDelay: `${index * 0.08}s` }}>
+                <div className="img-wrap">
+                  <span className="badge-hot">🔥 Hot Deal</span>
+                  <span className="badge-sold">✅ {sold}+ sold</span>
+                  <img src={img_url + product.product_photo} alt={product.product_name} />
+                  <div className="img-overlay">
+                    <button className="overlay-btn" style={{ background: '#fff', color: '#ff4500' }} onClick={() => addToCart(product)}>🛒 Add to Cart</button>
+                    <button className="overlay-btn" style={{ background: 'linear-gradient(90deg,#ff7e5f,#feb47b)', color: '#fff' }} onClick={() => handleNav('/makepayment', { state: { product } })}>Buy Now</button>
+                  </div>
+                  <button className="wishlist-btn" onClick={() => toggleWishlist(product.id)}>
+                    {inWishlist ? '❤️' : '🤍'}
+                  </button>
+                </div>
+                <div className="card-body-inner">
+                  <p className="product-name">{highlight(product.product_name)}</p>
+                  <p className="product-desc">{highlight(product.product_description)}</p>
+                  <div style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
+                    <span className="stars">{renderStars(rating)}</span>
+                    <span className="reviews">({reviews} reviews)</span>
+                  </div>
+                  <div className="price-row">
+                    <span className="price">Ksh {Number(product.product_cost).toLocaleString()}</span>
+                    <span className="original-price">Ksh {originalPrice.toLocaleString()}</span>
+                    <span className="discount-badge">-{discountPct}%</span>
+                  </div>
+                  <div className="countdown-row">
+                    <span style={{ fontSize: '1rem' }}>⏰</span>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span className="countdown-label">Deal ends in</span>
+                        <span className="countdown-timer">{formatTimer(timeLeft)}</span>
+                      </div>
+                      <div className="countdown-bar-wrap">
+                        <div className="countdown-bar" style={{ width: `${barWidth}%` }} />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="watchers">
+                    <span className="watcher-dot"></span>
+                    <span><b>{watchers} people</b> are viewing this right now</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    <button className="btn-buy" onClick={() => handleNav('/makepayment', { state: { product } })}>Buy Now</button>
+                    <button className="btn-cart" onClick={() => addToCart(product)} title="Add to Cart">🛒</button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
-    </section>
 
-      {/* PRODUCTS */}
-<div id="products-section" className='row mt-5 text-center position-relative' style={{overflow:'hidden'}}>
+      {/* FLOATING CART BUTTON */}
+      {cartCount > 0 && (
+        <button
+          onClick={() => setCartOpen(true)}
+          style={{
+            position: 'fixed', bottom: 28, right: 28, zIndex: 7000,
+            background: 'linear-gradient(135deg,#ff7e5f,#feb47b)',
+            border: 'none', borderRadius: '50px', color: '#fff',
+            padding: '14px 22px', fontWeight: 800, fontSize: '1rem',
+            boxShadow: '0 8px 30px rgba(255,126,95,0.5)', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', gap: 8,
+            animation: 'slideInRight 0.4s ease'
+          }}
+        >
+          🛒 Cart
+          <span style={{ background: '#fff', color: '#ff4500', borderRadius: '50%', width: 26, height: 26, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem', fontWeight: 900 }}>
+            {cartCount}
+          </span>
+        </button>
+      )}
 
-  {/* Sparkle / floating confetti effect */}
-  <div className="confetti-wrapper">
-    {[...Array(20)].map((_, i) => (
-      <div 
-        key={i} 
-        className="confetti" 
-        style={{ 
-          '--random-x': Math.random(), 
-          '--random-rot': `${Math.random() * 360}deg` 
+      {/* ── CHAT BOX ── */}
+
+      {/* Floating chat toggle button */}
+      <button
+        onClick={() => setChatOpen(o => !o)}
+        style={{
+          position: 'fixed', bottom: 28, left: 28, zIndex: 7000,
+          width: 56, height: 56, borderRadius: '50%',
+          background: 'linear-gradient(135deg,#ff7e5f,#feb47b)',
+          border: 'none', color: '#fff', fontSize: 26,
+          cursor: 'pointer', boxShadow: '0 8px 24px rgba(255,126,95,0.5)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          transition: 'transform 0.2s'
         }}
-      ></div>
-    ))}
-  </div>
+        title="Chat with us"
+      >
+        {chatOpen ? '✕' : '💬'}
+      </button>
 
-  <h3 className='text-center text-primary mb-3 section-title'>🔥 Hot Offers - Available Products 🔥</h3>
-  {loading && <h4 className='text-info mb-3'>{loading}</h4>}
-  {error && <h4 className='text-danger mb-3'>{error}</h4>}
+      {/* Chat panel */}
+      {chatOpen && (
+        <div style={{
+          position: 'fixed', bottom: 96, left: 28, zIndex: 7001,
+          width: 320, height: 480, borderRadius: 18,
+          background: '#fff', boxShadow: '0 12px 50px rgba(0,0,0,0.22)',
+          display: 'flex', flexDirection: 'column', overflow: 'hidden',
+          animation: 'chatSlideUp 0.3s ease'
+        }}>
 
-  {products.map((product, index) => (
-    <div
-      className='col-md-3 mb-4 fade-in-card'
-      style={{ animationDelay: `${index * 0.2}s` }}
-      key={product.id}
-    >
-      <div className='card shadow p-3 text-center hover-card gradient-card position-relative'>
+          {/* Header */}
+          <div style={{ background: 'linear-gradient(90deg,#ff7e5f,#feb47b)', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(255,255,255,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>🤖</div>
+            <div>
+              <p style={{ margin: 0, fontWeight: 700, color: '#fff', fontSize: '0.9rem' }}>FitSpare Assistant</p>
+              <p style={{ margin: 0, fontSize: '0.72rem', color: 'rgba(255,255,255,0.9)' }}>● Online — Replies instantly</p>
+            </div>
+            <button onClick={() => setChatMessages([{ role: 'assistant', text: "Hi! 👋 Welcome to FitSpare Motors! Ask me about car parts, prices, delivery, payment, or anything else. I'm here to help!" }])}
+              style={{ marginLeft: 'auto', background: 'rgba(255,255,255,0.2)', border: 'none', color: '#fff', fontSize: 11, cursor: 'pointer', borderRadius: 10, padding: '4px 8px', fontWeight: 600 }}
+              title="Clear chat">
+              Clear
+            </button>
+          </div>
 
-        {/* Hot Deal / Limited Stock Badge */}
-        <span className='badge bg-danger position-absolute top-0 start-0 m-2 deal-badge'>🔥 Hot Deal</span>
-        <span className='badge bg-warning position-absolute top-0 end-0 m-2 deal-badge'>⏳ Limited Stock</span>
+          {/* Messages */}
+          <div style={{ flex: 1, overflowY: 'auto', padding: 14, display: 'flex', flexDirection: 'column', gap: 10, background: '#fff8f5' }}>
 
-        {/* Product Image with Overlay */}
-        <div className='img-wrapper position-relative overflow-hidden'>
-          <img
-            src={img_url + product.product_photo}
-            alt={product.product_photo}
-            className='product_img mt-3'
-          />
-          <div className='img-overlay'>
+            {chatMessages.map((msg, i) => (
+              <div key={i} style={{ display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start', gap: 7, animation: 'chatSlideUp 0.25s ease' }}>
+                {msg.role === 'assistant' && (
+                  <div style={{ width: 26, height: 26, borderRadius: '50%', background: '#ff7e5f', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, flexShrink: 0, alignSelf: 'flex-end' }}>🤖</div>
+                )}
+                <div className={msg.role === 'user' ? 'chat-bubble-user' : 'chat-bubble-bot'}>
+                  {msg.text}
+                </div>
+              </div>
+            ))}
+
+            {/* Typing indicator */}
+            {chatLoading && (
+              <div style={{ display: 'flex', gap: 7, alignItems: 'flex-end' }}>
+                <div style={{ width: 26, height: 26, borderRadius: '50%', background: '#ff7e5f', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13 }}>🤖</div>
+                <div className="chat-bubble-bot" style={{ display: 'flex', gap: 5, alignItems: 'center', padding: '12px 14px' }}>
+                  {[0, 0.2, 0.4].map((delay, i) => (
+                    <span key={i} style={{ width: 7, height: 7, borderRadius: '50%', background: '#ff7e5f', display: 'inline-block', animation: `chatBounce 1s ${delay}s infinite` }} />
+                  ))}
+                </div>
+              </div>
+            )}
+            <div ref={chatBottomRef} />
+          </div>
+
+          {/* Quick question chips */}
+          <div style={{ padding: '8px 10px', background: '#fff', borderTop: '1px solid #ffe0d6', display: 'flex', gap: 6, overflowX: 'auto' }}>
+            {quickQuestions.map((q, i) => (
+              <button key={i} className="chat-chip" onClick={() => sendQuickQuestion(q)}>{q}</button>
+            ))}
+          </div>
+
+          {/* Input area */}
+          <div style={{ padding: '10px 12px', borderTop: '1px solid #ffe0d6', display: 'flex', gap: 8, alignItems: 'center', background: '#fff' }}>
+            <input
+              type="text"
+              value={chatInput}
+              onChange={e => setChatInput(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && sendChatMessage()}
+              placeholder="Type your message…"
+              style={{ flex: 1, border: '1.5px solid #ffe0d6', borderRadius: 30, padding: '8px 14px', fontSize: '0.85rem', outline: 'none', fontFamily: 'inherit' }}
+            />
             <button
-              className='btn btn-outline-light quick-btn'
-              onClick={() => handleNav('/makepayment', { state: { product } })}
+              onClick={sendChatMessage}
+              disabled={chatLoading}
+              style={{ width: 36, height: 36, borderRadius: '50%', background: chatLoading ? '#ccc' : '#ff7e5f', border: 'none', color: '#fff', fontSize: 16, cursor: chatLoading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.2s' }}
             >
-              Quick Buy
+              ➤
             </button>
           </div>
         </div>
+      )}
 
-        {/* Product Details */}
-        <div className='card-body'>
-          <h5 className='mt-2 fw-bold'>{product.product_name}</h5>
-          <p className='text-muted'>{product.product_description}</p>
-          <b className='text-warning fs-5 price-highlight'>ksh: {product.product_cost}</b> <br />
-          <button
-            className='btn btn-primary mt-2 btn-animate'
-            onClick={() => handleNav('/makepayment', { state: { product } })}
-          >
-            Buy Now
-          </button>
-        </div>
-      </div>
-    </div>
-  ))}
-
-  {/* Styles */}
-  <style>{`
-    /* Fade-in animation for products */
-    .fade-in-card {
-      opacity: 0;
-      transform: translateY(30px);
-      animation: fadeInUp 0.8s forwards;
-    }
-    @keyframes fadeInUp {
-      from { opacity: 0; transform: translateY(30px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    /* Card hover & gradient background */
-    .gradient-card {
-      background: linear-gradient(145deg, #fff1f0, #ffe3e3);
-      border-radius: 15px;
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
-      position: relative;
-      overflow: hidden;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-    }
-    .hover-card:hover {
-      transform: translateY(-5px) scale(1.05);
-      box-shadow: 0 15px 35px rgba(0,0,0,0.35);
-    }
-
-    /* Product image */
-    .product_img {
-      height: 200px;
-      width: 100%;
-      object-fit: cover;
-      border-radius: 10px;
-      transition: transform 0.5s ease, filter 0.5s ease;
-    }
-    .hover-card:hover .product_img {
-      transform: scale(1.05);
-      filter: brightness(1.1);
-    }
-
-    /* Image overlay for Quick Buy */
-    .img-wrapper {
-      position: relative;
-    }
-    .img-overlay {
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: rgba(0,0,0,0.4);
-      display: flex; justify-content: center; align-items: center;
-      opacity: 0;
-      transition: opacity 0.4s ease;
-      border-radius: 10px;
-    }
-    .img-wrapper:hover .img-overlay {
-      opacity: 1;
-    }
-    .quick-btn {
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
-    }
-    .quick-btn:hover {
-      transform: scale(1.1);
-      box-shadow: 0 5px 15px rgba(255,255,255,0.6);
-    }
-
-    /* Buy button animation */
-    .btn-animate {
-      position: relative;
-      overflow: hidden;
-      transition: transform 0.3s ease;
-    }
-    .btn-animate::after {
-      content: '';
-      position: absolute;
-      width: 100%; height: 0;
-      top: 0; left: 0;
-      background: rgba(255,255,255,0.2);
-      transition: 0.4s;
-    }
-    .btn-animate:hover::after {
-      height: 100%;
-    }
-    .btn-animate:hover {
-      transform: scale(1.05);
-    }
-
-    /* Price highlight */
-    .price-highlight {
-      font-size: 1.2rem;
-      color: #ff4500;
-      font-weight: bold;
-      transition: color 0.5s ease;
-    }
-    .hover-card:hover .price-highlight {
-      color: #ff6f00;
-    }
-
-    /* Deal badges */
-    .deal-badge {
-      font-size: 0.9rem;
-      padding: 5px 10px;
-      border-radius: 8px;
-    }
-
-    /* Floating confetti / sparkle effect */
-    .confetti-wrapper {
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      pointer-events: none;
-      overflow: hidden;
-      z-index: 0;
-    }
-    .confetti {
-      position: absolute;
-      width: 8px; height: 8px;
-      background: linear-gradient(45deg, #ff0, #f0f);
-      opacity: 0.8;
-      border-radius: 50%;
-      animation: confetti-fall 5s linear infinite;
-      top: -10px;
-      left: calc(100% * var(--random-x));
-      transform: rotate(var(--random-rot)deg);
-    }
-    @keyframes confetti-fall {
-      0% { transform: translateY(0) rotate(var(--random-rot)deg); opacity:1; }
-      100% { transform: translateY(110vh) rotate(calc(var(--random-rot) + 360deg)); opacity:0; }
-    }
-  `}</style>
-</div>
-            {/* ========== FOOTER ========== */}
+      {/* FOOTER */}
       <footer className="mt-auto">
         <section className="row bg-danger text-light p-4">
           <div className="col-md-3 text-center mb-4">
             <h4>About Us</h4>
-            <p>FitSpare Motors provides top-quality car spare parts and engine components you can trust. We focus on reliability and durability to keep your vehicle running smoothly.</p>
-            <p>Our team is committed to helping you find the right parts quickly and easily. Your satisfaction and your car’s performance come first.</p>
+            <p>FitSpare Motors provides top-quality car spare parts and engine components you can trust.</p>
+            <p>Our team is committed to helping you find the right parts quickly and easily.</p>
           </div>
-
           <div className="col-md-3 text-center mb-4">
             <h4>Contact Us</h4>
             <form>
-              <input type="email" placeholder="Enter your email" className="form-control mb-3"/>
+              <input type="email" placeholder="Enter your email" className="form-control mb-3" />
               <textarea className="form-control mb-3" rows="3" placeholder="Leave a comment"></textarea>
               <button className="btn btn-primary">Send</button>
             </form>
           </div>
-
           <div className="col-md-3 text-center mb-4">
             <h4>Stay Connected</h4>
-            <p>Stay connected with FitSpare Motors on social media! Follow us on Facebook, Instagram, WhatsApp, and LinkedIn to get updates on new car parts, special offers, promotions, and tips to keep your vehicle running smoothly. Join our community and never miss out!</p>
+            <p>Follow us on social media for updates, offers, and tips!</p>
             <div className="d-flex justify-content-center gap-2">
-              <a href="https://www.facebook.com" target="_blank" rel="noreferrer">
-                <img src="/images2/faba.jpeg" alt="Facebook" width="40" height="40" />
-              </a>
-              <a href="https://wa.me/" target="_blank" rel="noreferrer">
-                <img src="/images2/wats.jpg" alt="WhatsApp" width="40" height="40" />
-              </a>
-              <a href="https://www.instagram.com" target="_blank" rel="noreferrer">
-                <img src="/images2/insta.jpeg" alt="Instagram" width="40" height="40" />
-              </a>
-              <a href="https://www.linkedin.com" target="_blank" rel="noreferrer">
-                <img src="/images2/linked.jpeg" alt="LinkedIn" width="40" height="40" />
-              </a>
+              <a href="https://www.facebook.com" target="_blank" rel="noreferrer"><img src="/images2/faba.jpeg" alt="Facebook" width="40" height="40" /></a>
+              <a href="https://wa.me/" target="_blank" rel="noreferrer"><img src="/images2/wats.jpg" alt="WhatsApp" width="40" height="40" /></a>
+              <a href="https://www.instagram.com" target="_blank" rel="noreferrer"><img src="/images2/insta.jpeg" alt="Instagram" width="40" height="40" /></a>
+              <a href="https://www.linkedin.com" target="_blank" rel="noreferrer"><img src="/images2/linked.jpeg" alt="LinkedIn" width="40" height="40" /></a>
             </div>
           </div>
-
           <div className="col-md-3 text-center mb-4">
             <img src="/images2/logo 2.jpeg" alt="logo" style={{ width: 300, height: 300 }} />
           </div>
         </section>
-
         <section className="bg-dark text-light text-center py-3">
-          <h5 className="fs-6 mt-2">
-            Developed by Wilmark Kipkirui Korir. &copy;2026. All rights reserved.
-          </h5>
+          <h5 className="fs-6 mt-2">Developed by Wilmark Kipkirui Korir. &copy;2026. All rights reserved.</h5>
         </section>
       </footer>
 

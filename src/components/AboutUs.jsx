@@ -1,39 +1,12 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Capacitor } from '@capacitor/core';
-import { AdMob } from '@capacitor-community/admob';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 
 const AboutUs = () => {
   const navigate = useNavigate();
-  const APP_ID = "ca-app-pub-7212399669133407~2123650394";
-  const AD_UNIT_ID = "ca-app-pub-7212399669133407/8621835477";
 
-  useEffect(() => {
-    const initAds = async () => {
-      if (!Capacitor.isNativePlatform()) return;
-      let adListener;
-      try {
-        await AdMob.initialize({ appId: APP_ID });
-        await AdMob.prepareInterstitial({ adUnitId: AD_UNIT_ID });
-        adListener = await AdMob.addListener('interstitialAdShowed', () => {
-          AdMob.prepareInterstitial({ adUnitId: AD_UNIT_ID });
-        });
-      } catch (e) { console.error("AdMob Error:", e); }
-
-      return () => {
-        if (adListener) adListener.remove();
-      };
-    };
-    const cleanup = initAds();
-    return () => cleanup.then(fn => fn && fn());
-  }, [AD_UNIT_ID, APP_ID]);
-
-  const handleExplore = async () => {
-    if (Capacitor.isNativePlatform()) {
-      try { await AdMob.showInterstitial(); } catch (e) {}
-    }
+  const handleExplore = () => {
     navigate("/addproduct");
   };
 
@@ -42,27 +15,30 @@ const AboutUs = () => {
 
       {/* NAVBAR */}
       <nav className="navbar navbar-expand-md navbar-dark shadow-lg offer-navbar sticky-top">
-        <img src="/images2/logo 1.jpeg" alt="Logo" style={{ height: 30, width: 30 }} className="me-2"/>
-        <Link to="/" className="navbar-brand"><b>FitSpare Motors</b></Link>
-        <button
-          className="navbar-toggler"
-          type="button"
-          data-bs-toggle="collapse"
-          data-bs-target="#navbarCollapse"
-          aria-controls="navbarCollapse"
-          aria-expanded="false"
-          aria-label="Toggle navigation"
-        >
-          <span className="navbar-toggler-icon"></span>
-        </button>
+        <div className="container">
+          <img src="/images2/logo 1.jpeg" alt="Logo" style={{ height: 40, width: 40 }} className="me-2"/>
+          <Link to="/" className="navbar-brand"><b>FitSpare Motors</b></Link>
+          <button
+            className="navbar-toggler"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#navbarCollapse"
+            aria-controls="navbarCollapse"
+            aria-expanded="false"
+            aria-label="Toggle navigation"
+          >
+            <span className="navbar-toggler-icon"></span>
+          </button>
 
-        <div className="collapse navbar-collapse" id="navbarCollapse">
-          <div className="navbar-nav ms-auto">
-            <Link to="/" className="nav-link offer-link">Home</Link>
-            <Link to="/addproduct" className="nav-link offer-link">Add Product</Link>
-            <Link to="/signup" className="nav-link offer-link">Sign Up</Link>
-            <Link to="/signin" className="nav-link offer-link">Sign In</Link>
-            <Link to="/aboutus" className="nav-link offer-link active">About Us</Link>
+          <div className="collapse navbar-collapse" id="navbarCollapse">
+            <div className="navbar-nav ms-auto">
+              <Link to="/" className="nav-link offer-link">Home</Link>
+              <Link to="/addproduct" className="nav-link offer-link">Add Product</Link>
+              <Link to="/signup" className="nav-link offer-link">Sign Up</Link>
+              <Link to="/signin" className="nav-link offer-link">Sign In</Link>
+              <Link to="/aboutus" className="nav-link offer-link active">About Us</Link>
+              <Link to="/location" className="nav-link offer-link">Location</Link>
+            </div>
           </div>
         </div>
       </nav>

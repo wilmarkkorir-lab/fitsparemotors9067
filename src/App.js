@@ -8,12 +8,12 @@ import GetProducts from './components/GetProduct';
 import './App.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min';
-import { AdMob } from '@capacitor-community/admob';
 
 
 
 import MakePayment from './components/MakePayment';
 import AboutUs from './components/AboutUs';
+import Location from './components/location';
 
 
 function App() {
@@ -38,6 +38,7 @@ function App() {
           <Route path='/addproduct' element={<AddProduct/>}/>
           <Route path='/' element={<GetProducts/>}/>
           <Route path='/aboutus' element={<AboutUs/>}/>
+          <Route path='/location' element={<Location/>}/>
         
         </Routes>
     </Router>
