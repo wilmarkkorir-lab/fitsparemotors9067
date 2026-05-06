@@ -54,7 +54,7 @@ const chatAnswers = [
   // DELIVERY
   { keywords: ['delivery', 'shipping', 'deliver', 'send', 'courier', 'dispatch'], answer: "🚚 Yes! We deliver nationwide across Kenya. Nairobi: same day or next day. Upcountry: 2-3 business days. Call 📞 0705387545 for delivery cost to your area!" },
   { keywords: ['nakuru', 'cbd', 'westlands', 'milimani', 'section58', 'langalanga', 'kasarani', 'pipeline'], answer: "📍 We deliver within Nakuru same day or next day. You can also visit our shop. Contact us on 📞 0705387545 for your exact area!" },
-  { keywords: ['upcountry', 'mombasa', 'kisumu', 'nakuru', 'eldoret', 'outside nairobi', 'nyeri', 'thika'], answer: "🚚 We deliver upcountry via courier. Delivery takes 2-3 business days. Extra charges may apply. Call 📞 0705387545 for a delivery quote!" },
+  { keywords: ['upcountry', 'mombasa', 'kisumu', 'eldoret', 'outside nairobi', 'nyeri', 'thika'], answer: "🚚 We deliver upcountry via courier. Delivery takes 2-3 business days. Extra charges may apply. Call 📞 0705387545 for a delivery quote!" },
   { keywords: ['free delivery', 'free shipping', 'delivery fee', 'shipping cost'], answer: "🚚 Delivery fees depend on your location. Nairobi deliveries start from Ksh 200. Call 📞 0705387545 for exact charges to your area!" },
   { keywords: ['how long', 'when will', 'duration', 'days to deliver', 'waiting'], answer: "⏰ Nairobi: same day or next day. Upcountry: 2-3 business days. We'll notify you once your order is dispatched!" },
   { keywords: ['track', 'tracking', 'order status', 'where is my order'], answer: "📦 To track your order, contact us on 📞 0705387545 or WhatsApp and give us your order details. We'll update you immediately!" },
@@ -98,6 +98,9 @@ const GetProducts = () => {
   const [toast, setToast] = useState(null);
   const [timers, setTimers] = useState({});
   const [search, setSearch] = useState("");
+  const [footerEmail, setFooterEmail] = useState("");
+  const [footerComment, setFooterComment] = useState("");
+  const [footerSent, setFooterSent] = useState(false);
 
   // ── CHAT STATE ──
   const [chatOpen, setChatOpen] = useState(false);
@@ -111,42 +114,30 @@ const GetProducts = () => {
   const navigate = useNavigate();
   const img_url = "https://cyberspecter.alwaysdata.net/static/images/";
 
-  // Check if user is logged in
-  const isLoggedIn = () => !!localStorage.getItem("user");
+  const handleNav = (path, state = {}) => navigate(path, state);
 
-  const handleNav = (path, state = {}) => {
-    // Redirect to signup if trying to access checkout or add product without login
-    if (!isLoggedIn() && (path === '/makepayment' || path === '/addproduct')) {
-      navigate("/signup");
-    } else {
-      navigate(path, state);
-    }
-  };
-
-  // Auto-scroll chat to bottom on new messages
   useEffect(() => {
     if (chatBottomRef.current) {
       chatBottomRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [chatMessages, chatLoading]);
 
-  // Filter products by search query
   const filteredProducts = products.filter(p =>
     p.product_name?.toLowerCase().includes(search.toLowerCase()) ||
     p.product_description?.toLowerCase().includes(search.toLowerCase())
   );
 
-  // Countdown timer per product (random 1–3 hrs)
   useEffect(() => {
     setTimers(prev => {
       const initial = {};
+      let hasNew = false;
       products.forEach(p => {
         if (!prev[p.id]) {
           initial[p.id] = Math.floor(Math.random() * 7200) + 3600;
+          hasNew = true;
         }
       });
-      if (Object.keys(initial).length === 0) return prev;
-      return { ...prev, ...initial };
+      return hasNew ? { ...prev, ...initial } : prev;
     });
   }, [products]);
 
@@ -184,14 +175,16 @@ const GetProducts = () => {
     }
   };
 
-  useEffect(() => { getProducts(); }, []);
-
-  // Cart helpers
-  const addToCart = (product) => {
-    if (!isLoggedIn()) {
+  useEffect(() => {
+    const user = localStorage.getItem("user");
+    if (!user) {
       navigate("/signup");
-      return;
+    } else {
+      getProducts();
     }
+  }, [navigate]);
+
+  const addToCart = (product) => {
     setCart(prev => {
       const exists = prev.find(i => i.id === product.id);
       if (exists) return prev.map(i => i.id === product.id ? { ...i, qty: i.qty + 1 } : i);
@@ -208,10 +201,6 @@ const GetProducts = () => {
   const cartCount = cart.reduce((sum, i) => sum + i.qty, 0);
 
   const toggleWishlist = (id) => {
-    if (!isLoggedIn()) {
-      navigate("/signup");
-      return;
-    }
     setWishlist(prev => prev.includes(id) ? prev.filter(w => w !== id) : [...prev, id]);
   };
 
@@ -242,20 +231,16 @@ const GetProducts = () => {
     );
   };
 
-  // ── SEND CHAT MESSAGE ──
   const sendChatMessage = () => {
     if (!chatInput.trim() || chatLoading) return;
-
     const userText = chatInput.toLowerCase();
     const userMessage = { role: 'user', text: chatInput };
     setChatMessages(prev => [...prev, userMessage]);
     setChatInput('');
     setChatLoading(true);
-
     const match = chatAnswers.find(item =>
       item.keywords.some(keyword => userText.includes(keyword))
     );
-
     setTimeout(() => {
       setChatMessages(prev => [...prev, {
         role: 'assistant',
@@ -267,7 +252,6 @@ const GetProducts = () => {
     }, 800);
   };
 
-  // ── QUICK QUESTION CHIPS ──
   const quickQuestions = [
     "Do you have brake pads?",
     "How do I pay?",
@@ -294,6 +278,14 @@ const GetProducts = () => {
       }]);
       setChatLoading(false);
     }, 800);
+  };
+
+  const handleFooterSubmit = (e) => {
+    e.preventDefault();
+    if (footerEmail && footerComment) {
+      setFooterSent(true);
+      setTimeout(() => { setFooterSent(false); setFooterEmail(''); setFooterComment(''); }, 3500);
+    }
   };
 
   return (
@@ -369,7 +361,6 @@ const GetProducts = () => {
         )}
       </div>
 
-      {/* Cart overlay */}
       {cartOpen && <div onClick={() => setCartOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 8999 }} />}
 
       {/* NAVBAR */}
@@ -440,6 +431,9 @@ const GetProducts = () => {
         .colourful-caption { background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); border-radius: 16px; padding: 20px 28px; }
         .colourful-caption h1 { font-weight: 800; letter-spacing: 0.5px; }
         .features { font-size: 0.95rem; color: #ffe066; letter-spacing: 0.5px; }
+
+        .carousel-btn-group { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin-top: 16px; }
+        .carousel-btn-group .btn { min-width: 120px; }
 
         .search-section { background: linear-gradient(135deg,#fff8f5,#fff3e0); padding: 28px 20px; border-bottom: 1px solid #ffe0d6; }
         .search-wrap { max-width: 640px; margin: 0 auto; display: flex; align-items: center; background: #fff; border-radius: 50px; box-shadow: 0 6px 30px rgba(255,126,95,0.18); border: 2px solid #ffe0d6; overflow: hidden; transition: border-color 0.3s, box-shadow 0.3s; }
@@ -513,6 +507,214 @@ const GetProducts = () => {
         .chat-chip:hover { background: #ff7e5f; color: #fff; border-color: #ff7e5f; }
         @keyframes chatBounce { 0%,100%{transform:translateY(0);opacity:0.5} 50%{transform:translateY(-5px);opacity:1} }
         @keyframes chatSlideUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+
+        /* ══════════════════════════════════════════
+           FOOTER STYLES — REDUCED HEIGHT
+        ══════════════════════════════════════════ */
+        .fitspare-footer {
+          background: linear-gradient(160deg, #0f0f1e 0%, #1a1a2e 50%, #16213e 100%);
+          color: #e0e0e0;
+          font-family: 'Segoe UI', sans-serif;
+          position: relative;
+          overflow: hidden;
+        }
+        .fitspare-footer::before {
+          content: '';
+          position: absolute;
+          top: 0; left: 0; right: 0;
+          height: 4px;
+          background: linear-gradient(90deg, #ff7e5f, #feb47b, #ff7e5f);
+          background-size: 200% 100%;
+          animation: shimmer 3s linear infinite;
+        }
+        @keyframes shimmer { 0%{background-position:0% 0%} 100%{background-position:200% 0%} }
+
+        .footer-top {
+          display: grid;
+          grid-template-columns: 2fr 1fr 1fr 1fr;
+          gap: 28px;
+          padding: 36px 60px 24px;
+          border-bottom: 1px solid rgba(255,255,255,0.07);
+        }
+        @media (max-width: 992px) {
+          .footer-top { grid-template-columns: 1fr 1fr; gap: 24px; padding: 32px 32px 24px; }
+        }
+        @media (max-width: 600px) {
+          .footer-top { grid-template-columns: 1fr; gap: 20px; padding: 28px 24px 20px; }
+          .footer-bottom-inner { flex-direction: column; gap: 16px; text-align: center; }
+        }
+
+        .footer-brand-logo {
+          width: 44px; height: 44px; border-radius: 50%;
+          border: 3px solid #ff7e5f;
+          object-fit: cover;
+          margin-bottom: 10px;
+          box-shadow: 0 0 20px rgba(255,126,95,0.4);
+        }
+        .footer-brand-name {
+          font-size: 1.3rem; font-weight: 900;
+          background: linear-gradient(90deg, #ff7e5f, #feb47b);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          margin-bottom: 8px;
+          letter-spacing: 0.5px;
+        }
+        .footer-brand-desc {
+          font-size: 0.83rem; color: #8899aa; line-height: 1.6;
+          margin-bottom: 16px;
+        }
+        .footer-socials { display: flex; gap: 10px; }
+        .social-icon {
+          width: 36px; height: 36px; border-radius: 10px;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 16px; cursor: pointer;
+          background: rgba(255,255,255,0.06);
+          border: 1px solid rgba(255,255,255,0.1);
+          transition: all 0.25s ease;
+          text-decoration: none;
+          color: #fff;
+        }
+        .social-icon:hover {
+          background: linear-gradient(135deg,#ff7e5f,#feb47b);
+          border-color: transparent;
+          transform: translateY(-3px);
+          box-shadow: 0 8px 20px rgba(255,126,95,0.35);
+          color: #fff;
+        }
+
+        .footer-col-title {
+          font-size: 0.75rem; font-weight: 800;
+          text-transform: uppercase; letter-spacing: 2px;
+          color: #ff7e5f; margin-bottom: 14px;
+          display: flex; align-items: center; gap: 8px;
+        }
+        .footer-col-title::after {
+          content: '';
+          flex: 1; height: 1px;
+          background: linear-gradient(90deg,#ff7e5f22,transparent);
+        }
+        .footer-link {
+          display: flex; align-items: center; gap: 8px;
+          color: #8899aa; text-decoration: none;
+          font-size: 0.85rem; padding: 4px 0;
+          transition: color 0.2s, transform 0.2s;
+        }
+        .footer-link:hover { color: #feb47b; transform: translateX(4px); }
+        .footer-link-arrow { font-size: 0.65rem; color: #ff7e5f; opacity: 0; transition: opacity 0.2s; }
+        .footer-link:hover .footer-link-arrow { opacity: 1; }
+
+        .footer-contact-item {
+          display: flex; align-items: flex-start; gap: 10px;
+          margin-bottom: 8px;
+        }
+        .footer-contact-icon {
+          width: 32px; height: 32px; flex-shrink: 0;
+          background: rgba(255,126,95,0.12);
+          border-radius: 8px;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 14px; border: 1px solid rgba(255,126,95,0.2);
+        }
+        .footer-contact-text { font-size: 0.83rem; color: #8899aa; line-height: 1.4; }
+        .footer-contact-text strong { color: #ccd; display: block; font-size: 0.75rem; margin-bottom: 1px; }
+
+        .footer-form-group { margin-bottom: 10px; }
+        .footer-input {
+          width: 100%;
+          background: rgba(255,255,255,0.05);
+          border: 1px solid rgba(255,255,255,0.1);
+          border-radius: 10px; padding: 8px 12px;
+          color: #e0e0e0; font-size: 0.83rem;
+          outline: none; font-family: inherit;
+          transition: border-color 0.2s, box-shadow 0.2s;
+          resize: none;
+          box-sizing: border-box;
+        }
+        .footer-input::placeholder { color: #556; }
+        .footer-input:focus {
+          border-color: #ff7e5f;
+          box-shadow: 0 0 0 3px rgba(255,126,95,0.12);
+        }
+        .footer-submit-btn {
+          width: 100%; padding: 9px;
+          background: linear-gradient(90deg, #ff7e5f, #feb47b);
+          border: none; border-radius: 10px;
+          color: #fff; font-weight: 700; font-size: 0.88rem;
+          cursor: pointer; letter-spacing: 0.3px;
+          transition: transform 0.2s, box-shadow 0.2s;
+          font-family: inherit;
+        }
+        .footer-submit-btn:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 24px rgba(255,126,95,0.4);
+        }
+        .footer-sent-msg {
+          text-align: center; color: #1db954;
+          font-weight: 700; font-size: 0.88rem;
+          padding: 10px;
+          background: rgba(29,185,84,0.1);
+          border-radius: 10px; border: 1px solid rgba(29,185,84,0.2);
+        }
+
+        .footer-hours {
+          display: flex; flex-direction: column; gap: 4px;
+        }
+        .footer-hour-row {
+          display: flex; justify-content: space-between; align-items: center;
+          font-size: 0.8rem; color: #8899aa;
+          padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .footer-hour-row:last-child { border-bottom: none; }
+        .hour-badge {
+          font-size: 0.7rem; font-weight: 700; padding: 2px 7px;
+          border-radius: 20px; background: rgba(29,185,84,0.15);
+          color: #1db954; border: 1px solid rgba(29,185,84,0.25);
+        }
+        .hour-badge.closed { background: rgba(255,100,100,0.12); color: #ff6464; border-color: rgba(255,100,100,0.2); }
+
+        .footer-middle {
+          display: flex; align-items: center; justify-content: space-between;
+          flex-wrap: wrap; gap: 12px;
+          padding: 16px 60px;
+          border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        @media (max-width: 768px) { .footer-middle { padding: 14px 28px; } }
+
+        .footer-trust-pill {
+          display: flex; align-items: center; gap: 7px;
+          background: rgba(255,255,255,0.04);
+          border: 1px solid rgba(255,255,255,0.08);
+          border-radius: 30px; padding: 6px 14px;
+          font-size: 0.78rem; color: #8899aa; font-weight: 600;
+        }
+        .footer-trust-pill span:first-child { font-size: 0.95rem; }
+
+        .footer-bottom {
+          padding: 12px 60px;
+          background: rgba(0,0,0,0.25);
+        }
+        @media (max-width: 768px) { .footer-bottom { padding: 12px 28px; } }
+        .footer-bottom-inner {
+          display: flex; align-items: center; justify-content: space-between;
+          flex-wrap: wrap; gap: 12px;
+        }
+        .footer-copyright {
+          font-size: 0.8rem; color: #556;
+        }
+        .footer-copyright strong { color: #feb47b; }
+        .footer-legal-links { display: flex; gap: 20px; }
+        .footer-legal-link {
+          font-size: 0.76rem; color: #556;
+          text-decoration: none; transition: color 0.2s;
+        }
+        .footer-legal-link:hover { color: #feb47b; }
+
+        .footer-glow-orb {
+          position: absolute; border-radius: 50%;
+          filter: blur(80px); pointer-events: none; opacity: 0.07;
+        }
+        .orb-1 { width: 400px; height: 400px; background: #ff7e5f; top: -100px; right: -50px; }
+        .orb-2 { width: 300px; height: 300px; background: #feb47b; bottom: -80px; left: 10%; }
       `}</style>
 
       {/* CAROUSEL */}
@@ -533,8 +735,10 @@ const GetProducts = () => {
                   <h1>Welcome to FitSpare Motors</h1>
                   <p>Your trusted destination for genuine car spare parts.</p>
                   <p className="features">✔ Genuine Parts | ✔ Affordable Prices | ✔ Trusted Quality</p>
-                  <button className="btn btn-danger me-2" onClick={(e) => { e.stopPropagation(); if (products.length > 0) addToCart(products[0]); }}>Add to Cart</button>
-                  <button className="btn btn-warning" onClick={(e) => { e.stopPropagation(); if (products.length > 0) handleNav("/makepayment", { state: { product: products[0] } }); }}>Shop Now</button>
+                  <div className="carousel-btn-group">
+                    <button className="btn btn-danger" onClick={(e) => { e.stopPropagation(); if (products.length > 0) addToCart(products[0]); }}>Add to Cart</button>
+                    <button className="btn btn-warning" onClick={(e) => { e.stopPropagation(); if (products.length > 0) handleNav("/makepayment", { state: { product: products[0] } }); }}>Shop Now</button>
+                  </div>
                 </div>
               </div>
               <div className="carousel-item" onClick={() => handleNav("/addproduct")} style={{ cursor: "pointer" }}>
@@ -543,7 +747,9 @@ const GetProducts = () => {
                   <h1>Want to Sell Your Spare Parts?</h1>
                   <p>Add your product quickly and reach thousands of buyers.</p>
                   <p className="features">➕ Add Product | ⚙ Easy Upload | 🛠 Secure Listing</p>
-                  <button className="btn btn-warning" onClick={(e) => { e.stopPropagation(); handleNav("/addproduct"); }}>Add Product</button>
+                  <div className="carousel-btn-group">
+                    <button className="btn btn-warning" onClick={(e) => { e.stopPropagation(); handleNav("/addproduct"); }}>Add Product</button>
+                  </div>
                 </div>
               </div>
               <div className="carousel-item" onClick={() => { const s = document.getElementById("products-section"); if (s) s.scrollIntoView({ behavior: "smooth" }); }} style={{ cursor: "pointer" }}>
@@ -552,7 +758,9 @@ const GetProducts = () => {
                   <h1>Secure & Easy Payment</h1>
                   <p>Pay quickly and safely for the parts you need.</p>
                   <p className="features">💳 Multiple Payment Options | 🔒 Safe & Reliable</p>
-                  <button className='btn btn-outline-light' onClick={(e) => { e.stopPropagation(); const s = document.getElementById("products-section"); if (s) s.scrollIntoView({ behavior: "smooth" }); }}>View Catalog</button>
+                  <div className="carousel-btn-group">
+                    <button className='btn btn-outline-light' onClick={(e) => { e.stopPropagation(); const s = document.getElementById("products-section"); if (s) s.scrollIntoView({ behavior: "smooth" }); }}>View Catalog</button>
+                  </div>
                 </div>
               </div>
               <div className="carousel-item" onClick={() => handleNav("/signin")} style={{ cursor: "pointer" }}>
@@ -561,8 +769,10 @@ const GetProducts = () => {
                   <h1>Join FitSpare Motors</h1>
                   <p>Sign in or sign up to start buying or selling today.</p>
                   <p className="features">🔐 Sign In | 📝 Sign Up | ⭐ Trusted Community</p>
-                  <button className="btn btn-outline-light me-2" onClick={(e) => { e.stopPropagation(); handleNav("/signin"); }}>Sign In</button>
-                  <button className="btn btn-primary" onClick={(e) => { e.stopPropagation(); handleNav("/signup"); }}>Sign Up</button>
+                  <div className="carousel-btn-group">
+                    <button className="btn btn-outline-light" onClick={(e) => { e.stopPropagation(); handleNav("/signin"); }}>Sign In</button>
+                    <button className="btn btn-primary" onClick={(e) => { e.stopPropagation(); handleNav("/signup"); }}>Sign Up</button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -725,8 +935,6 @@ const GetProducts = () => {
       )}
 
       {/* ── CHAT BOX ── */}
-
-      {/* Floating chat toggle button */}
       <button
         onClick={() => setChatOpen(o => !o)}
         style={{
@@ -743,7 +951,6 @@ const GetProducts = () => {
         {chatOpen ? '✕' : '💬'}
       </button>
 
-      {/* Chat panel */}
       {chatOpen && (
         <div style={{
           position: 'fixed', bottom: 96, left: 28, zIndex: 7001,
@@ -752,8 +959,6 @@ const GetProducts = () => {
           display: 'flex', flexDirection: 'column', overflow: 'hidden',
           animation: 'chatSlideUp 0.3s ease'
         }}>
-
-          {/* Header */}
           <div style={{ background: 'linear-gradient(90deg,#ff7e5f,#feb47b)', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(255,255,255,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>🤖</div>
             <div>
@@ -766,10 +971,7 @@ const GetProducts = () => {
               Clear
             </button>
           </div>
-
-          {/* Messages */}
           <div style={{ flex: 1, overflowY: 'auto', padding: 14, display: 'flex', flexDirection: 'column', gap: 10, background: '#fff8f5' }}>
-
             {chatMessages.map((msg, i) => (
               <div key={i} style={{ display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start', gap: 7, animation: 'chatSlideUp 0.25s ease' }}>
                 {msg.role === 'assistant' && (
@@ -780,8 +982,6 @@ const GetProducts = () => {
                 </div>
               </div>
             ))}
-
-            {/* Typing indicator */}
             {chatLoading && (
               <div style={{ display: 'flex', gap: 7, alignItems: 'flex-end' }}>
                 <div style={{ width: 26, height: 26, borderRadius: '50%', background: '#ff7e5f', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13 }}>🤖</div>
@@ -794,15 +994,11 @@ const GetProducts = () => {
             )}
             <div ref={chatBottomRef} />
           </div>
-
-          {/* Quick question chips */}
           <div style={{ padding: '8px 10px', background: '#fff', borderTop: '1px solid #ffe0d6', display: 'flex', gap: 6, overflowX: 'auto' }}>
             {quickQuestions.map((q, i) => (
               <button key={i} className="chat-chip" onClick={() => sendQuickQuestion(q)}>{q}</button>
             ))}
           </div>
-
-          {/* Input area */}
           <div style={{ padding: '10px 12px', borderTop: '1px solid #ffe0d6', display: 'flex', gap: 8, alignItems: 'center', background: '#fff' }}>
             <input
               type="text"
@@ -824,24 +1020,21 @@ const GetProducts = () => {
       )}
 
       {/* FOOTER */}
-      <footer className="mt-auto">
-        <section className="row bg-danger text-light p-4">
-          <div className="col-md-3 text-center mb-4">
-            <h4>About Us</h4>
-            <p>FitSpare Motors provides top-quality car spare parts and engine components you can trust.</p>
-            <p>Our team is committed to helping you find the right parts quickly and easily.</p>
-          </div>
-          <div className="col-md-3 text-center mb-4">
-            <h4>Contact Us</h4>
-            <form>
-              <input type="email" placeholder="Enter your email" className="form-control mb-3" />
-              <textarea className="form-control mb-3" rows="3" placeholder="Leave a comment"></textarea>
-              <button className="btn btn-primary">Send</button>
-            </form>
-          </div>
-          <div className="col-md-3 text-center mb-4">
+      <footer className="fitspare-footer mt-auto">
+        <div className="footer-glow-orb orb-1" />
+        <div className="footer-glow-orb orb-2" />
+
+        <div className="footer-top">
+          {/* Col 1 — Brand */}
+          <div>
+            <img src="/images2/logo 1.jpeg" alt="FitSpare Logo" className="footer-brand-logo" />
+            <div className="footer-brand-name">FitSpare Motors</div>
+            <p className="footer-brand-desc">
+              Kenya's most trusted destination for genuine, affordable car spare parts. We keep your vehicle running at its best — from the engine to the exhaust.
+            </p>
+            <div className="col-md-3 text-center mb-4 " >
             <h4>Stay Connected</h4>
-            <p>Follow us on social media for updates, offers, and tips!</p>
+            <p  style={{ textAlign: 'center' }}>Follow us on social media for updates, offers, and tips!</p>
             <div className="d-flex justify-content-center gap-2">
               <a href="https://www.facebook.com" target="_blank" rel="noreferrer"><img src="/images2/faba.jpeg" alt="Facebook" width="40" height="40" /></a>
               <a href="https://wa.me/" target="_blank" rel="noreferrer"><img src="/images2/wats.jpg" alt="WhatsApp" width="40" height="40" /></a>
@@ -849,13 +1042,151 @@ const GetProducts = () => {
               <a href="https://www.linkedin.com" target="_blank" rel="noreferrer"><img src="/images2/linked.jpeg" alt="LinkedIn" width="40" height="40" /></a>
             </div>
           </div>
-          <div className="col-md-3 text-center mb-4">
-            <img src="/images2/logo 2.jpeg" alt="logo" style={{ width: 300, height: 300 }} />
           </div>
-        </section>
-        <section className="bg-dark text-light text-center py-3">
-          <h5 className="fs-6 mt-2">Developed by Wilmark Kipkirui Korir. &copy;2026. All rights reserved.</h5>
-        </section>
+
+          {/* Col 2 — Quick Links */}
+          <div>
+            <div className="footer-col-title">Quick Links</div>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              {[
+                { label: 'Home', path: '/' },
+                { label: 'Add Product', path: '/addproduct' },
+                { label: 'Sign Up', path: '/signup' },
+                { label: 'Sign In', path: '/signin' },
+                { label: 'About Us', path: '/aboutus' },
+                { label: 'Location', path: '/location' },
+              ].map(({ label, path }) => (
+                <Link key={label} to={path} className="footer-link">
+                  <span className="footer-link-arrow">▶</span>
+                  {label}
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          {/* Col 3 — Contact */}
+          <div>
+            <div className="footer-col-title">Contact Us</div>
+            <div className="footer-contact-item">
+              <div className="footer-contact-icon">📞</div>
+              <div className="footer-contact-text">
+                <strong>Phone / WhatsApp</strong>
+                0705 387 545
+              </div>
+            </div>
+            <div className="footer-contact-item">
+              <div className="footer-contact-icon">📧</div>
+              <div className="footer-contact-text">
+                <strong>Email</strong>
+                wilmarkkorir@gmail.com
+              </div>
+            </div>
+            <div className="footer-contact-item">
+              <div className="footer-contact-icon">📍</div>
+              <div className="footer-contact-text">
+                <strong>Location</strong>
+                Nakuru, Kenya
+              </div>
+            </div>
+
+            <div className="footer-col-title" style={{ marginTop: 14 }}>Business Hours</div>
+            <div className="footer-hours">
+              <div className="footer-hour-row">
+                <span>Mon – Sat</span>
+                <span className="hour-badge">8:00am – 6:00pm</span>
+              </div>
+              <div className="footer-hour-row">
+                <span>Sunday</span>
+                <span className="hour-badge">10:00am – 4:00pm</span>
+              </div>
+              <div className="footer-hour-row">
+                <span>Public Holidays</span>
+                <span className="hour-badge closed">May vary</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Col 4 — Message Form */}
+          <div>
+            <div className="footer-col-title">Send a Message</div>
+            {footerSent ? (
+              <div className="footer-sent-msg">
+                ✅ Message sent! We'll get back to you shortly.
+              </div>
+            ) : (
+              <div onSubmit={handleFooterSubmit}>
+                <div className="footer-form-group">
+                  <input
+                    type="email"
+                    className="footer-input"
+                    placeholder="Your email address"
+                    value={footerEmail}
+                    onChange={e => setFooterEmail(e.target.value)}
+                  />
+                </div>
+                <div className="footer-form-group">
+                  <textarea
+                    className="footer-input"
+                    rows="3"
+                    placeholder="Your message or inquiry…"
+                    value={footerComment}
+                    onChange={e => setFooterComment(e.target.value)}
+                  />
+                </div>
+                <button
+                  className="footer-submit-btn"
+                  onClick={handleFooterSubmit}
+                  type="button"
+                >
+                  Send Message ✉️
+                </button>
+              </div>
+            )}
+
+            <div style={{ marginTop: 16 }}>
+              <div className="footer-col-title">Trusted Brands</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {['Toyota', 'Nissan', 'Subaru', 'Honda', 'Mitsubishi', 'Isuzu', 'Mazda', 'Suzuki'].map(b => (
+                  <span key={b} style={{
+                    background: 'rgba(255,126,95,0.1)', border: '1px solid rgba(255,126,95,0.2)',
+                    borderRadius: 20, padding: '3px 10px', fontSize: '0.72rem',
+                    color: '#feb47b', fontWeight: 600
+                  }}>{b}</span>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* MIDDLE — Trust pills */}
+        <div className="footer-middle">
+          {[
+            { icon: '🔒', text: 'Secure Payments' },
+            { icon: '✅', text: '100% Genuine Parts' },
+            { icon: '🚚', text: 'Nationwide Delivery' },
+            { icon: '🔄', text: '7-Day Easy Returns' },
+            { icon: '⭐', text: 'Trusted by Thousands' },
+          ].map(({ icon, text }) => (
+            <div key={text} className="footer-trust-pill">
+              <span>{icon}</span>
+              <span>{text}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* BOTTOM — Copyright */}
+        <div className="footer-bottom">
+          <div className="footer-bottom-inner">
+            <p className="footer-copyright" style={{ margin: 0 }}>
+              © 2026 <strong>FitSpare Motors</strong>. All rights reserved. Developed by <strong>Wilmark Kipkirui Korir</strong>.
+            </p>
+            <div className="footer-legal-links">
+              <a href="/" className="footer-legal-link">Privacy Policy</a>
+              <a href="/" className="footer-legal-link">Terms of Service</a>
+              <a href="/" className="footer-legal-link">Sitemap</a>
+            </div>
+          </div>
+        </div>
       </footer>
 
     </div>

@@ -12,6 +12,9 @@ const SigninPage = () => {
   const [remember, setRemember] = useState(false);
   const [showPassword, setShowPassword] = useState(false); // Show/hide password
   const [loading, setLoading] = useState(false);
+  const [, setFailedAttempts] = useState(0);
+  const [lockoutTime, setLockoutTime] = useState(0);
+  const [passwordError, setPasswordError] = useState("");
   const [error, setError] = useState("");
 
   const [banners] = useState([
@@ -37,18 +40,58 @@ const SigninPage = () => {
     };
   }, [banners.length]);
 
+  // Lockout timer countdown
+  useEffect(() => {
+    let timer;
+    if (lockoutTime > 0) {
+      timer = setTimeout(() => setLockoutTime((prev) => prev - 1), 1000);
+    }
+    return () => clearTimeout(timer);
+  }, [lockoutTime]);
+
   // Load remembered email/password
   useEffect(() => {
     const remembered = JSON.parse(localStorage.getItem("rememberedSignin"));
-    if (remembered?.email && remembered?.password) {
+    if (remembered?.email) { // Only pre-fill email, not password for security
       setEmail(remembered.email);
-      setPassword(remembered.password);
       setRemember(true);
     }
   }, []);
 
+  const validatePassword = (pwd) => {
+    if (!pwd) return "";
+    if (pwd.length < 8) {
+      return "Password must be at least 8 characters long.";
+    }
+    if (!/(?=.*[a-z])/.test(pwd)) {
+      return "Password must contain at least one lowercase letter.";
+    }
+    if (!/(?=.*[A-Z])/.test(pwd)) {
+      return "Password must contain at least one uppercase letter.";
+    }
+    if (!/(?=.*\d)/.test(pwd)) {
+      return "Password must contain at least one number.";
+    }
+    if (!/(?=.*[!@#$%^&*()_+\-=[\]{};:'"\\|,.<>/?])/.test(pwd)) {
+      return "Password must contain at least one special character.";
+    }
+    return "";
+  };
+
   const submit = async (e) => {
     e.preventDefault();
+
+    if (lockoutTime > 0) {
+      setError(`Too many failed attempts. Try again in ${lockoutTime} seconds.`);
+      return;
+    }
+
+    const pwdErr = validatePassword(password);
+    if (pwdErr) {
+      setPasswordError(pwdErr);
+      return;
+    }
+
     setError("");
     setLoading(true);
 
@@ -70,8 +113,8 @@ const SigninPage = () => {
         // Store email & password if remember me checked
         if (remember) {
           localStorage.setItem(
-            "rememberedSignin",
-            JSON.stringify({ email, password })
+            "rememberedSignin", // Only store email, never password
+            JSON.stringify({ email })
           );
         } else {
           localStorage.removeItem("rememberedSignin");
@@ -84,6 +127,16 @@ const SigninPage = () => {
       }
     } catch (err) {
       setLoading(false);
+      setPassword(""); // Security: Clear password field on error
+      
+      setFailedAttempts((prev) => {
+        const next = prev + 1;
+        if (next >= 5) {
+          setLockoutTime(30); // Lockout for 30 seconds after 5 failures
+          return 0;
+        }
+        return next;
+      });
       setError(err.response?.data?.message || "Something went wrong");
     }
   };
@@ -137,6 +190,7 @@ const SigninPage = () => {
           <h3 className="text-center mb-3 text-warning">Sign In</h3>
 
           {error && <p className="text-danger text-center">{error}</p>}
+          {passwordError && <p className="text-danger text-center">{passwordError}</p>}
 
           <form onSubmit={submit}>
             <input
@@ -151,7 +205,10 @@ const SigninPage = () => {
               type={showPassword ? "text" : "password"}
               placeholder="Password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                setPasswordError(validatePassword(e.target.value));
+              }}
               required
               className="form-control mb-2"
             />
@@ -167,20 +224,25 @@ const SigninPage = () => {
                 Show Password
               </label>
             </div>
-            <div className="form-check mb-4">
-              <input
-                type="checkbox"
-                className="form-check-input"
-                id="rememberMe"
-                checked={remember}
-                onChange={(e) => setRemember(e.target.checked)}
-              />
-              <label className="form-check-label" htmlFor="rememberMe">
-                Remember Me
-              </label>
+            <div className="d-flex justify-content-between align-items-center mb-4">
+              <div className="form-check">
+                <input
+                  type="checkbox"
+                  className="form-check-input"
+                  id="rememberMe"
+                  checked={remember}
+                  onChange={(e) => setRemember(e.target.checked)}
+                />
+                <label className="form-check-label" htmlFor="rememberMe">
+                  Remember Me
+                </label>
+              </div>
+              <Link to="/forgot-password" className="fw-semibold text-decoration-none text-info">
+                Forgot Password?
+              </Link>
             </div>
-            <button type="submit" className="btn btn-gradient w-100 mb-3" disabled={loading}>
-              {loading ? "Signing in..." : "Sign In"}
+            <button type="submit" className="btn btn-gradient w-100 mb-3" disabled={loading || lockoutTime > 0 || !!passwordError}>
+              {lockoutTime > 0 ? `Locked (${lockoutTime}s)` : loading ? "Signing in..." : "Sign In"}
             </button>
           </form>
 

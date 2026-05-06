@@ -120,7 +120,7 @@ const MakePayment = () => {
             <span style={styles.inputIcon}>📱</span>
             <input
               type="tel"
-              placeholder="07XXXXXXXX"
+              placeholder="254 7XX XXX XXX"
               required
               value={phone}
               onChange={(e) => setPhone(e.target.value)}

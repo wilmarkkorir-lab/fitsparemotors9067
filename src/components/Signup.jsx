@@ -1,5 +1,5 @@
 import axios from "axios";
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 const Signup = () => {
@@ -11,39 +11,36 @@ const Signup = () => {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
+  const [passwordError, setPasswordError] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  // Signup banner messages
-  const [banners] = useState([
-    "🚀 Join FitSpare Motors Today! 🚀",
-    "Sign up to access exclusive deals!",
-    "Create your account in seconds!",
-    "Be part of our growing car parts community!"
-  ]);
-  const [currentBanner, setCurrentBanner] = useState(0);
-  const [showBanner, setShowBanner] = useState(true);
-
-  // Banner animation
-  useEffect(() => {
-    const interval1 = setInterval(() => setShowBanner(false), 2000); // disappear
-    const interval2 = setInterval(() => {
-      setCurrentBanner((prev) => (prev + 1) % banners.length);
-      setShowBanner(true); // appear
-    }, 4000); // appear after disappear
-
-    return () => {
-      clearInterval(interval1);
-      clearInterval(interval2);
-    };
-  }, [banners.length]);
+  const validatePassword = (pwd) => {
+    if (pwd.length < 8) {
+      return "Password must be at least 8 characters long.";
+    }
+    if (!/(?=.*[a-z])/.test(pwd)) {
+      return "Password must contain at least one lowercase letter.";
+    }
+    if (!/(?=.*[A-Z])/.test(pwd)) {
+      return "Password must contain at least one uppercase letter.";
+    }
+    if (!/(?=.*\d)/.test(pwd)) {
+      return "Password must contain at least one number.";
+    }
+    if (!/(?=.*[!@#$%^&*()_+\-=[\]{};:'"\\|,.<>/?])/.test(pwd)) {
+      return "Password must contain at least one special character.";
+    }
+    return ""; // No error
+  };
 
   const submit = async (e) => {
     e.preventDefault();
     setError("");
     setSuccess("");
     setLoading(true);
+    setPasswordError(""); // Clear previous password error
 
     try {
       const data = new FormData();
@@ -51,6 +48,12 @@ const Signup = () => {
       data.append("email", email);
       data.append("phone", phone);
       data.append("password", password);
+
+      const pwdValidationMsg = validatePassword(password);
+      if (pwdValidationMsg) {
+        setPasswordError(pwdValidationMsg);
+        return; // Stop submission if password is not valid
+      }
 
       const response = await axios.post(
         "https://cyberspecter.alwaysdata.net/api/signup",
@@ -103,16 +106,6 @@ const Signup = () => {
         </div>
       </nav>
 
-      {/* SIGNUP BANNER */}
-      <div className="offer-banner d-flex flex-column justify-content-center align-items-center text-center text-light">
-        <h1 className={`mb-2 flash-text ${showBanner ? "show" : "hide"}`}>
-          {banners[currentBanner]}
-        </h1>
-        <h3 className={`animated-text ${showBanner ? "show" : "hide"}`}>
-          Start your journey with FitSpare Motors today!
-        </h3>
-      </div>
-
       {/* SIGNUP CARD */}
       <div className="container flex-grow-1 d-flex justify-content-center align-items-start py-5">
         <div className="card p-5 shadow-lg offer-card" style={{ maxWidth: "600px", width: "100%" }}>
@@ -121,6 +114,7 @@ const Signup = () => {
           {loading && <p className="text-warning text-center">Creating account...</p>}
           {error && <p className="text-danger text-center">{error}</p>}
           {success && <p className="text-success text-center">{success}</p>}
+          {passwordError && <p className="text-danger text-center">{passwordError}</p>}
 
           <form onSubmit={submit}>
             <input
@@ -153,7 +147,9 @@ const Signup = () => {
               placeholder="Password"
               required
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                setPasswordError(validatePassword(e.target.value)); }}
             />
             <div className="form-check mb-4">
               <input
@@ -168,7 +164,7 @@ const Signup = () => {
               </label>
             </div>
 
-            <button type="submit" disabled={loading} className="btn btn-gradient w-100 mb-3">
+            <button type="submit" disabled={loading || !!passwordError} className="btn btn-gradient w-100 mb-3">
               {loading ? "Creating..." : "Sign Up"}
             </button>
 
@@ -202,31 +198,6 @@ const Signup = () => {
         .offer-link:hover {
           color: #ffd633 !important;
           transform: scale(1.1);
-        }
-        .offer-banner {
-          height: 250px;
-          background: linear-gradient(45deg, #ff6666, #ffcc66);
-          box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-          margin-bottom: 30px;
-          padding: 20px;
-          border-radius: 15px;
-        }
-        .flash-text {
-          animation: flash 1.5s infinite;
-        }
-        @keyframes flash {
-          0%,50%,100% { opacity:1; }
-          25%,75% { opacity:0; }
-        }
-        .animated-text {
-          font-size: 1.5rem;
-          font-weight: bold;
-          color: #fff;
-          animation: appearDisappear 4s infinite;
-        }
-        @keyframes appearDisappear {
-          0%,25%,100% { opacity:0; }
-          50%,75% { opacity:1; }
         }
         .offer-card {
           border-radius: 20px;
