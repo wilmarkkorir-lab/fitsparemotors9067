@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 
@@ -13,6 +13,13 @@ const AddProduct = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  useEffect(() => {
+    const user = localStorage.getItem("user");
+    if (!user) {
+      navigate("/signup");
+    }
+  }, [navigate]);
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
