@@ -237,13 +237,15 @@ const SigninPage = () => {
                   Remember Me
                 </label>
               </div>
-              <Link to="/forgot-password" className="fw-semibold text-decoration-none text-info">
-                Forgot Password?
-              </Link>
             </div>
             <button type="submit" className="btn btn-gradient w-100 mb-3" disabled={loading || lockoutTime > 0 || !!passwordError}>
               {lockoutTime > 0 ? `Locked (${lockoutTime}s)` : loading ? "Signing in..." : "Sign In"}
             </button>
+
+            <div className="text-center mb-2">
+              <span className="text-muted small">New to FitSpare Motors?</span>
+              <Link to="/signup" className="btn btn-outline-warning btn-sm w-100 mt-2 fw-bold">Sign Up Fast — Create Account</Link>
+            </div>
           </form>
 
           <p className="text-center mt-3 small">
