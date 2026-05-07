@@ -4,11 +4,8 @@ import { useNavigate, Link } from 'react-router-dom';
 
 // ── CHAT ANSWERS ──
 const chatAnswers = [
-  // GREETINGS
   { keywords: ['hello', 'hi', 'hey', 'good morning', 'good afternoon', 'good evening', 'hii', 'hallo'], answer: "Hello! 👋 Welcome to FitSpare Motors! I'm here to help you find the right car parts. What do you need today?" },
   { keywords: ['how are you', 'how r you', 'how are u'], answer: "I'm doing great, thank you! 😊 Ready to help you find the best car parts. What can I assist you with?" },
-
-  // PRODUCTS
   { keywords: ['brake', 'brake pad', 'brake pads', 'brakes', 'disc'], answer: "🔧 Yes! We stock brake pads and brake discs for Toyota, Nissan, Subaru, Mitsubishi, Honda, and more. Search 'brake' in the search bar above to see all available options!" },
   { keywords: ['engine oil', 'oil', 'lubricant', 'motor oil'], answer: "🛢️ We carry engine oils in various grades — 5W-30, 10W-40, 15W-40. Suitable for petrol and diesel engines. Search 'oil' in the product search bar above!" },
   { keywords: ['air filter', 'airfilter', 'cabin filter', 'filter'], answer: "🌬️ We stock air filters, cabin filters, and oil filters for most car models. Search 'filter' above to find one that matches your car!" },
@@ -26,8 +23,6 @@ const chatAnswers = [
   { keywords: ['mirror', 'side mirror', 'wing mirror'], answer: "🪞 We stock side mirrors for Toyota, Nissan, Subaru, and more. Search 'mirror' above!" },
   { keywords: ['bumper', 'body part', 'bonnet', 'hood', 'fender', 'door'], answer: "🚗 We carry various body parts including bumpers, bonnets, fenders, and doors. Contact us with your car model and year for availability!" },
   { keywords: ['wiper', 'windscreen', 'windshield', 'wipers'], answer: "🌧️ We have wiper blades and windscreens for most cars. Search 'wiper' above or tell us your car model!" },
-
-  // CAR BRANDS
   { keywords: ['toyota', 'corolla', 'hilux', 'prado', 'land cruiser', 'vitz', 'fielder', 'harrier', 'rav4'], answer: "🚗 Great choice! We stock many parts for Toyota — Corolla, Hilux, Prado, Land Cruiser, Vitz, Fielder, Harrier, and RAV4. Search the part you need above!" },
   { keywords: ['nissan', 'x-trail', 'tiida', 'note', 'patrol', 'navara', 'march'], answer: "🚗 Yes! We have parts for Nissan — X-Trail, Tiida, Note, Patrol, Navara, March, and more. Search the part you need above!" },
   { keywords: ['subaru', 'forester', 'outback', 'impreza', 'legacy', 'brz'], answer: "🚗 We stock parts for Subaru models — Forester, Outback, Impreza, Legacy, and BRZ. Search the specific part above!" },
@@ -38,46 +33,30 @@ const chatAnswers = [
   { keywords: ['isuzu', 'dmax', 'd-max', 'trooper', 'npr'], answer: "🚗 We have parts for Isuzu — D-Max, Trooper, NPR trucks, and more. Search the part or contact us for availability!" },
   { keywords: ['mazda', 'cx-5', 'demio', 'atenza', 'familia'], answer: "🚗 We stock parts for Mazda — CX-5, Demio, Atenza, and Familia. Search the part above!" },
   { keywords: ['suzuki', 'swift', 'alto', 'vitara', 'jimny'], answer: "🚗 We carry parts for Suzuki — Swift, Alto, Vitara, and Jimny. Search 'suzuki' or the specific part name above!" },
-
-  // PRICING
   { keywords: ['price', 'cost', 'how much', 'expensive', 'cheap', 'affordable', 'bei'], answer: "💰 All product prices are shown on each product card. We offer competitive and affordable prices. Use the search bar to find the part and check its price!" },
   { keywords: ['discount', 'offer', 'sale', 'deal', 'promo', 'coupon'], answer: "🔥 Yes! We have hot deals running. Check our product listings for the best prices!" },
   { keywords: ['negotiate', 'bargain', 'lower price', 'reduce price'], answer: "🤝 For bulk orders or special requests, contact us on 📞 0705387545 and we'll see what we can do for you!" },
   { keywords: ['bulk', 'wholesale', 'many', 'large order', 'fleet'], answer: "📦 We offer special pricing for bulk and wholesale orders! Call us on 📞 0705387545 to discuss bulk pricing for your fleet or business!" },
-
-  // PAYMENT
   { keywords: ['payment', 'pay', 'mpesa', 'm-pesa', 'cash', 'card', 'lipa', 'checkout'], answer: "💳 We accept M-Pesa, cash, and card payments. Click 'Buy Now' on any product to go to the payment page. It's quick and secure!" },
   { keywords: ['paybill', 'till', 'number', 'send money'], answer: "📱 Our M-Pesa PayBill and Till numbers are shown at the checkout page. Click 'Buy Now' on any product to proceed and see the details!" },
   { keywords: ['invoice', 'receipt', 'proof of payment'], answer: "🧾 We provide receipts for all purchases. Contact us on 📞 0705387545 for any invoice requests!" },
   { keywords: ['instalment', 'installment', 'pay later', 'credit'], answer: "💳 We currently accept full payment. For large orders, contact us on 📞 0705387545 to discuss flexible payment arrangements!" },
-
-  // DELIVERY
   { keywords: ['delivery', 'shipping', 'deliver', 'send', 'courier', 'dispatch'], answer: "🚚 Yes! We deliver nationwide across Kenya. Nairobi: same day or next day. Upcountry: 2-3 business days. Call 📞 0705387545 for delivery cost to your area!" },
   { keywords: ['nakuru', 'cbd', 'westlands', 'milimani', 'section58', 'langalanga', 'kasarani', 'pipeline'], answer: "📍 We deliver within Nakuru same day or next day. You can also visit our shop. Contact us on 📞 0705387545 for your exact area!" },
   { keywords: ['upcountry', 'mombasa', 'kisumu', 'eldoret', 'outside nairobi', 'nyeri', 'thika'], answer: "🚚 We deliver upcountry via courier. Delivery takes 2-3 business days. Extra charges may apply. Call 📞 0705387545 for a delivery quote!" },
   { keywords: ['free delivery', 'free shipping', 'delivery fee', 'shipping cost'], answer: "🚚 Delivery fees depend on your location. Nairobi deliveries start from Ksh 200. Call 📞 0705387545 for exact charges to your area!" },
   { keywords: ['how long', 'when will', 'duration', 'days to deliver', 'waiting'], answer: "⏰ Nairobi: same day or next day. Upcountry: 2-3 business days. We'll notify you once your order is dispatched!" },
   { keywords: ['track', 'tracking', 'order status', 'where is my order'], answer: "📦 To track your order, contact us on 📞 0705387545 or WhatsApp and give us your order details. We'll update you immediately!" },
-
-  // RETURNS & WARRANTY
   { keywords: ['return', 'refund', 'exchange', 'wrong part', 'damaged'], answer: "🔄 Easy return policy! If you receive a wrong or damaged part, contact us within 7 days on 📞 0705387545 and we'll sort it out quickly!" },
   { keywords: ['warranty', 'guarantee', 'genuine', 'original', 'fake', 'counterfeit'], answer: "✅ All our parts are 100% genuine and come with a warranty. We do not sell counterfeit parts. Quality is our priority!" },
   { keywords: ['quality', 'brand', 'trusted', 'reliable', 'best'], answer: "⭐ We only stock high-quality, genuine spare parts from trusted manufacturers. Your safety on the road is our top priority!" },
-
-  // CONTACT & LOCATION
   { keywords: ['contact', 'call', 'phone', 'number', 'reach', 'whatsapp'], answer: "📞 Call or WhatsApp us on 0705387545. Available Monday–Saturday 8am–6pm. Email: wilmarkkorir@gmail.com" },
   { keywords: ['location', 'address', 'where', 'shop', 'find you', 'directions', 'map'], answer: "📍 We are located in Nakuru, Kenya. Click the 'Location' page on our website for the exact address and Google Maps directions!" },
   { keywords: ['open', 'working hours', 'hours', 'when open', 'close', 'closed', 'sunday'], answer: "🕗 Open Monday–Saturday: 8:00am – 6:00pm. Sunday: 10:00am – 4:00pm. Public holidays may vary!" },
   { keywords: ['email', 'mail', 'write to'], answer: "📧 You can email us at wilmarkkorir@gmail.com. We respond within 24 hours on business days!" },
-
-  // ACCOUNT
   { keywords: ['sign up', 'signup', 'register', 'create account', 'new account'], answer: "📝 Creating an account is easy! Click 'Sign Up' in the navigation bar, fill in your details, and you're ready to shop!" },
   { keywords: ['sign in', 'signin', 'login', 'log in', 'password', 'forgot password'], answer: "🔐 Click 'Sign In' in the navigation bar to access your account. Forgot your password? Contact us on 📞 0705387545 and we'll help reset it!" },
-
-  // SELL
   { keywords: ['sell', 'add product', 'list product', 'upload product', 'vendor', 'supplier', 'i want to sell'], answer: "🛠️ Want to sell your spare parts with us? Click 'Add Product' in the navigation bar to list your products and reach thousands of buyers!" },
-
-  // GENERAL
   { keywords: ['thank', 'thanks', 'asante', 'sawa', 'okay', 'ok', 'great', 'good', 'perfect', 'awesome'], answer: "😊 You're welcome! Feel free to ask if you need anything else. Happy shopping at FitSpare Motors!" },
   { keywords: ['bye', 'goodbye', 'see you', 'later', 'kwaheri', 'ciao'], answer: "👋 Goodbye! Thank you for visiting FitSpare Motors. Come back anytime — we're always here to help!" },
   { keywords: ['help', 'assist', 'support', 'problem', 'issue', 'not working'], answer: "🙋 I'm here to help! Tell me what you need — a specific part, payment help, delivery info, or anything else!" },
@@ -109,6 +88,18 @@ const quickQuestions = [
   "Working hours?",
   "Return policy?",
   "Toyota parts?",
+];
+
+// ── SEARCH TAGS — label shown to user, query used for filtering ──
+const searchTags = [
+  { label: 'Brake Pads',     query: 'brake'    },
+  { label: 'Engine Oil',     query: 'oil'      },
+  { label: 'Air Filter',     query: 'filter'   },
+  { label: 'Spark Plug',     query: 'spark'    },
+  { label: 'Shock Absorber', query: 'shock'    },
+  { label: 'Battery',        query: 'battery'  },
+  { label: 'Clutch',         query: 'clutch'   },
+  { label: 'Radiator',       query: 'radiator' },
 ];
 
 const INITIAL_CHAT = [
@@ -172,11 +163,15 @@ const GetProducts = () => {
     chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages, chatLoading]);
 
-  // ── SEARCH ──
-  const filteredProducts = products.filter(p =>
-    p.product_name?.toLowerCase().includes(search.toLowerCase()) ||
-    p.product_description?.toLowerCase().includes(search.toLowerCase())
-  );
+  // ── FIX 1: IMPROVED FILTER — trims whitespace, guards empty query ──
+  const filteredProducts = products.filter(p => {
+    const q = search.trim().toLowerCase();
+    if (!q) return true; // show ALL products when search is empty
+    return (
+      p.product_name?.toLowerCase().includes(q) ||
+      p.product_description?.toLowerCase().includes(q)
+    );
+  });
 
   const highlight = (text) => {
     if (!search || !text) return text;
@@ -233,6 +228,15 @@ const GetProducts = () => {
     if (!chatInput.trim() || chatLoading) return;
     dispatchChat(chatInput);
     setChatInput('');
+  };
+
+  // ── FIX 2: TAG CLICK HANDLER — uses short query keyword + delayed scroll ──
+  const handleTagClick = (query) => {
+    if (!requireAuth()) return;
+    setSearch(query);
+    setTimeout(() => {
+      document.getElementById('products-section')?.scrollIntoView({ behavior: 'smooth' });
+    }, 100);
   };
 
   // ── FOOTER FORM ──
@@ -410,6 +414,7 @@ const GetProducts = () => {
         .tag-row { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
         .tag { background: #fff; border: 1.5px solid #ffe0d6; border-radius: 30px; padding: 5px 14px; font-size: 0.8rem; font-weight: 600; color: #ff7e5f; cursor: pointer; transition: all 0.2s; }
         .tag:hover { background: #ff7e5f; color: #fff; border-color: #ff7e5f; }
+        .tag.active { background: #ff7e5f; color: #fff; border-color: #ff7e5f; }
 
         .no-results { text-align: center; padding: 60px 20px; }
         .no-results-icon { font-size: 64px; }
@@ -611,15 +616,17 @@ const GetProducts = () => {
             : <><b>{products.length}</b> products available — search to find what you need</>
           }
         </p>
+
+        {/* FIX 3: TAGS use { label, query } — short keyword for matching, label for display */}
         {!search && (
           <div className="tag-row">
-            {['Brake Pads', 'Engine Oil', 'Air Filter', 'Spark Plug', 'Shock Absorber', 'Battery', 'Clutch', 'Radiator'].map(tag => (
-              <button key={tag} className="tag" onClick={() => {
-                if (!requireAuth()) return;
-                setSearch(tag);
-                document.getElementById('products-section')?.scrollIntoView({ behavior: 'smooth' });
-              }}>
-                {tag}
+            {searchTags.map(({ label, query }) => (
+              <button
+                key={label}
+                className="tag"
+                onClick={() => handleTagClick(query)}
+              >
+                {label}
               </button>
             ))}
           </div>
@@ -725,7 +732,6 @@ const GetProducts = () => {
           display: 'flex', flexDirection: 'column', overflow: 'hidden',
           animation: 'chatSlideUp 0.3s ease'
         }}>
-          {/* Chat Header */}
           <div style={{ background: 'linear-gradient(90deg,#ff7e5f,#feb47b)', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(255,255,255,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>🤖</div>
             <div>
@@ -740,7 +746,6 @@ const GetProducts = () => {
             </button>
           </div>
 
-          {/* Chat Messages */}
           <div style={{ flex: 1, overflowY: 'auto', padding: 14, display: 'flex', flexDirection: 'column', gap: 10, background: '#fff8f5' }}>
             {chatMessages.map((msg, i) => (
               <div key={i} style={{ display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start', gap: 7, animation: 'chatSlideUp 0.25s ease' }}>
@@ -763,14 +768,12 @@ const GetProducts = () => {
             <div ref={chatBottomRef} />
           </div>
 
-          {/* Quick Questions */}
           <div style={{ padding: '8px 10px', background: '#fff', borderTop: '1px solid #ffe0d6', display: 'flex', gap: 6, overflowX: 'auto' }}>
             {quickQuestions.map((q, i) => (
               <button key={i} className="chat-chip" onClick={() => dispatchChat(q)}>{q}</button>
             ))}
           </div>
 
-          {/* Chat Input */}
           <div style={{ padding: '10px 12px', borderTop: '1px solid #ffe0d6', display: 'flex', gap: 8, alignItems: 'center', background: '#fff' }}>
             <input
               type="text"
@@ -811,7 +814,6 @@ const GetProducts = () => {
         <div className="footer-glow-orb orb-2" />
 
         <div className="footer-top">
-          {/* Brand Column */}
           <div>
             <img src="/images2/logo 1.jpeg" alt="FitSpare Logo" className="footer-brand-logo" />
             <div className="footer-brand-name">FitSpare Motors</div>
@@ -830,7 +832,6 @@ const GetProducts = () => {
             </div>
           </div>
 
-          {/* Quick Links */}
           <div>
             <div className="footer-col-title">Quick Links</div>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -850,7 +851,6 @@ const GetProducts = () => {
             </div>
           </div>
 
-          {/* Contact */}
           <div>
             <div className="footer-col-title">Contact Us</div>
             {[
@@ -872,7 +872,6 @@ const GetProducts = () => {
             </div>
           </div>
 
-          {/* Message Form */}
           <div>
             <div className="footer-col-title">Send a Message</div>
             {footerSent ? (
@@ -900,7 +899,6 @@ const GetProducts = () => {
           </div>
         </div>
 
-        {/* Trust Pills */}
         <div className="footer-middle">
           {[
             { icon: '🔒', text: 'Secure Payments' },
@@ -913,7 +911,6 @@ const GetProducts = () => {
           ))}
         </div>
 
-        {/* Copyright */}
         <div className="footer-bottom">
           <div className="footer-bottom-inner">
             <p className="footer-copyright" style={{ margin: 0 }}>
